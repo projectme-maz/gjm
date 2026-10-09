@@ -62,12 +62,12 @@
     .top-logout { background: #fff; border: 1px solid var(--line); border-radius: 6px; color: #4b574c; font-size: 10px; padding: 5px 8px; }
     .top-logout:hover { background: #f2f7f1; border-color: #cbd9ca; }
     .auth-screen { align-items: center; background: radial-gradient(ellipse at 82% 10%, rgba(218,237,216,.5), transparent 35%), var(--canvas); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 20; }
-    .auth-developer { color: var(--green-dark); font-size: 11px; font-weight: 700; letter-spacing: .2px; position: absolute; right: 28px; top: 22px; }
     .auth-card { animation: dashboard-enter .28s ease both; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 22px 70px rgba(29,53,36,.13); max-width: 420px; padding: 32px; width: 100%; }
     .auth-brand { align-items: center; display: flex; gap: 12px; margin-bottom: 25px; }
     .auth-brand .brand-mark { flex: 0 0 44px; height: 44px; width: 44px; }
     .auth-brand .brand-name { color: var(--ink); font-size: 16px; }
     .auth-brand .brand-caption { color: var(--muted); }
+    .auth-copyright { color: #929a91; font-size: 11px; font-weight: 600; margin-left: auto; white-space: nowrap; }
     .auth-card h1 { font-size: 25px; }
     .auth-description { color: var(--muted); font-size: 12px; margin: 8px 0 22px; }
     .auth-form { display: grid; gap: 13px; }
@@ -368,7 +368,6 @@
     }
     @media (max-width: 650px) {
       .app-shell { display: block; padding-bottom: 62px; }
-      .auth-developer { right: 16px; top: 14px; }
       .sidebar { background: linear-gradient(100deg, #245b3d, #194a32); border-bottom: 1px solid #194a32; border-right: 0; bottom: 0; flex-direction: row; height: 61px; left: 0; padding: 5px 9px; position: fixed; right: 0; z-index: 5; }
       .brand, .nav-label, .sidebar-bottom { display: none; }
       .nav-list { display: flex; flex: 1; justify-content: space-around; }
@@ -401,9 +400,8 @@
 </head>
 <body class="auth-locked">
   <section class="auth-screen" id="auth-screen" aria-label="Login">
-    <div class="auth-developer">M-Maz Developer</div>
     <div class="auth-card">
-      <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div></div>
+      <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div><span class="auth-copyright">© M-Maz</span></div>
       <h1>Login Account</h1>
       <p class="auth-description">Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.</p>
       <form class="auth-form" id="login-form">
