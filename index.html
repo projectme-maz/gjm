@@ -1015,7 +1015,7 @@
       if (!authSession || idleLogoutInProgress) return;
       idleLogoutInProgress = true;
       idleLogoutMessage = "Sesi berakhir karena tidak ada aktivitas selama 5 jam. Silakan login kembali.";
-      const { error } = await supabaseClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut({ scope: "local" });
       if (error) {
         console.error("Logout otomatis gagal:", error);
         lockApp();
