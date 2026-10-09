@@ -69,6 +69,8 @@ The browser app uses the Supabase project URL and publishable key in `index.html
 
 Authenticated staff share one workspace dataset. Changes are saved to Supabase and other open sessions check for updates every eight seconds. Data is no longer limited to the local browser after the shared record has been initialized.
 
+The schedule starts with five separate workspaces. Use **Jadwal → Tambah Sesi** to add more; all added workspaces are saved in the shared dataset and preserved when other sessions refresh.
+
 The generated `@users.stock-opname.invalid` addresses are internal identifiers only; staff do not need personal email addresses and cannot receive password recovery email. If someone forgets a password, an administrator must reset it. The SQL keeps the username mapping private from browser users, does not grant database access to anonymous visitors, and does not allow authenticated users to delete the shared record. Every staff account can read and edit the shared stock-opname data; give the temporary password only to trusted staff.
 
 The `indra` account is the workspace super admin. After signing in, Indra can open **Kelola Akun** to create staff usernames, reset their passwords, and disable or re-enable accounts. Admin actions are checked by the `admin-users` Edge Function against the user's server-managed Supabase `app_metadata`; ordinary staff cannot call these actions by changing browser data. This role grants control inside this workspace application, not ownership of the GitHub repository or Supabase project dashboard.

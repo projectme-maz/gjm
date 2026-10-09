@@ -504,7 +504,6 @@
       state.workspaces = [first, ...Array.from({ length: 4 }, (_, index) => createWorkspace(index + 2))];
       state.currentWorkspaceId = first.id;
     } else {
-      state.workspaces = state.workspaces.slice(0, 5);
       while (state.workspaces.length < 5) state.workspaces.push(createWorkspace(state.workspaces.length + 1));
       state.workspaces.forEach((workspace, index) => {
         if (!workspace.id) workspace.id = crypto.randomUUID();
@@ -646,7 +645,6 @@
         normalized.workspaces = [first, ...Array.from({ length: 4 }, (_, index) => createWorkspace(index + 2))];
         normalized.currentWorkspaceId = first.id;
       } else {
-        normalized.workspaces = normalized.workspaces.slice(0, 5);
         while (normalized.workspaces.length < 5) normalized.workspaces.push(createWorkspace(normalized.workspaces.length + 1));
         normalized.workspaces.forEach((workspace, index) => {
           if (!workspace.id) workspace.id = crypto.randomUUID();
@@ -1318,7 +1316,15 @@
         const serials = Object.keys(data.serialMaster || {}).length;
         return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}"></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}"></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span></td><td><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button></td></tr>`;
       }).join("");
-      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Kelola lima sesi terpisah. Setiap sesi memiliki master dan hasil scan sendiri.</p></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah di perangkat ini.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Lima sesi tersedia sejak awal. Tambahkan sesi baru jika diperlukan; setiap sesi memiliki master dan hasil scan sendiri.</p></div><div class="head-buttons"><button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+    }
+
+    function addWorkspace() {
+      const workspace = createWorkspace(state.workspaces.length + 1);
+      state.workspaces.push(workspace);
+      persist();
+      render();
+      notify(`${workspace.name} berhasil ditambahkan.`);
     }
 
     function render() {
@@ -1377,6 +1383,7 @@
     }
 
     function bindPageEvents() {
+      document.getElementById("add-workspace-button")?.addEventListener("click", addWorkspace);
       document.getElementById("admin-refresh-users")?.addEventListener("click", loadAdminUsers);
       document.getElementById("admin-create-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
