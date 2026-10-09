@@ -3,28 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f5ef">
+  <meta name="theme-color" content="#f4f7f6">
   <title>STOCK OPNAME | Rekonsiliasi SN</title>
   <style>
     :root {
       color-scheme: light;
-      --ink: #1d2b22;
-      --muted: #6f7d72;
-      --line: #e2e9e1;
-      --canvas: #f3f7f2;
+      --ink: #172b2b;
+      --muted: #667876;
+      --line: #e1e9e7;
+      --canvas: #f4f7f6;
       --paper: #fff;
-      --green: #286344;
-      --green-dark: #194a32;
-      --green-soft: #e6f2e8;
-      --lime: #c9eb9d;
-      --amber: #9c681c;
-      --amber-soft: #fbf1dc;
-      --red: #a6473f;
-      --red-soft: #f8eae7;
-      --shadow: 0 14px 38px rgba(29, 53, 36, .1);
+      --green: #176b5b;
+      --green-dark: #124a41;
+      --green-soft: #e5f2ee;
+      --lime: #b8d8c9;
+      --amber: #96631d;
+      --amber-soft: #fbf2df;
+      --red: #a34b46;
+      --red-soft: #f9ecea;
+      --shadow: 0 14px 38px rgba(25, 55, 50, .1);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: radial-gradient(ellipse at 88% 0%, rgba(218, 237, 216, .48), transparent 34%), var(--canvas); color: var(--ink); font: 14px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+    body { margin: 0; background: radial-gradient(ellipse at 88% 0%, rgba(213, 232, 226, .5), transparent 36%), var(--canvas); color: var(--ink); font: 14px/1.5 "DM Sans", "Segoe UI", sans-serif; }
     button, input, select { font: inherit; }
     button { cursor: pointer; }
     button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(61, 132, 83, .23); outline-offset: 2px; }
@@ -402,6 +402,41 @@
       .search-wrap { flex: 1; }
       .search-input { width: 100%; }
       .select-input { max-width: 130px; }
+    }
+    .sidebar { background: linear-gradient(180deg, #194b43 0%, #123832 100%); border-color: #123832; box-shadow: 5px 0 24px rgba(24, 59, 52, .12); }
+    @media (max-width: 650px) {
+      .sidebar { background: linear-gradient(100deg, #194b43, #123832); border-color: #123832; }
+    }
+    .brand-mark { background: linear-gradient(145deg, #287c69, #124a41); }
+    .nav-item.active { background: linear-gradient(100deg, #d7ebe4, #f0f7f4); box-shadow: inset 3px 0 #8fbba8; color: #164b42; }
+    .auth-screen { background: radial-gradient(ellipse at 82% 10%, rgba(213, 232, 226, .62), transparent 36%), var(--canvas); }
+    .auth-card { border-radius: 18px; box-shadow: 0 22px 70px rgba(25, 55, 50, .13); }
+    .auth-submit, .button-primary { background: linear-gradient(135deg, #21806a, var(--green)); }
+    .auth-submit:hover, .button-primary:hover { background: var(--green-dark); }
+    .button-primary { box-shadow: 0 3px 9px rgba(23, 107, 91, .16); }
+    .button-primary:hover { box-shadow: 0 6px 14px rgba(23, 107, 91, .2); }
+    .button-secondary:hover, .top-logout:hover { background: #f1f7f5; border-color: #c7dcd5; }
+    .session-strip { background: linear-gradient(115deg, #174b42 0%, #176b5b 66%, #328875 100%); }
+    .session-actions .button { background: #c8e5d8; color: #16473e; }
+    .session-actions .button:hover { background: #dbefe6; }
+    .metric, .layout-card, .table-section, .dashboard-panel, .history-summary { box-shadow: 0 5px 18px rgba(25, 55, 50, .045); }
+    .metric:hover, .layout-card:hover { border-color: #c4dcd3; box-shadow: 0 10px 24px rgba(25, 55, 50, .09); }
+    .table-toolbar { background: linear-gradient(100deg, #fff, #f7faf9); }
+    th { background: #f2f7f5; color: #627873; }
+    td { border-top-color: #edf2f0; }
+    tbody tr:hover { background: #f3f8f6; }
+    .workspace-row.current { background: #f0f7f4; }
+    .progress-fill { background: linear-gradient(90deg, #267f69, #68a58a); }
+    .progress-track { background: #e8efec; }
+    .toast { background: #183b36; border-radius: 9px; }
+    dialog { border-radius: 12px; box-shadow: 0 24px 80px rgba(22, 45, 41, .24); }
+    dialog::backdrop { background: rgba(20, 42, 39, .42); backdrop-filter: blur(3px); }
+    .button, .nav-item, .metric, .layout-card, .table-section, .auth-input, .scan-input, .search-input, .select-input, .count-input, .qty-input, .note-input, .form-control, .top-logout, .toast {
+      transition-duration: .22s;
+      transition-timing-function: cubic-bezier(.2, .7, .2, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
