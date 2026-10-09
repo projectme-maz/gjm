@@ -63,7 +63,7 @@ Deno.serve(async (request: Request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  let input: { action?: string; username?: string } = {};
+  let input: { action?: string; username?: string; temporaryPassword?: string } = {};
   try {
     input = await request.json();
   } catch {
@@ -71,6 +71,73 @@ Deno.serve(async (request: Request) => {
   }
 
   const temporaryPassword = makeTemporaryPassword();
+  if (input.action === "reset-all-passwords") {
+    if (
+      typeof input.temporaryPassword !== "string" ||
+      input.temporaryPassword.length < 8 ||
+      input.temporaryPassword.length > 72
+    ) {
+      return jsonResponse(400, { error: "Password sementara harus terdiri dari 8 sampai 72 karakter." }, responseOrigin);
+    }
+
+    const { data: mappings, error: mappingsError } = await adminClient
+      .from("stock_opname_usernames")
+      .select("username, email")
+      .in("username", usernames);
+    if (mappingsError) {
+      console.error("Bulk password reset mapping lookup failed:", mappingsError.message);
+      return jsonResponse(503, { error: "Daftar akun tidak dapat diperiksa." }, responseOrigin);
+    }
+
+    const mappingsByUsername = new Map((mappings || []).map((mapping) => [mapping.username, mapping.email]));
+    let authUsers: Array<{ id: string; email?: string; user_metadata?: Record<string, unknown> }> = [];
+    for (let page = 1; ; page++) {
+      const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) {
+        console.error("Bulk password reset user lookup failed:", error.message);
+        return jsonResponse(503, { error: "Daftar akun tidak dapat diperiksa." }, responseOrigin);
+      }
+      authUsers = authUsers.concat(data.users);
+      if (data.users.length < 1000) break;
+    }
+
+    const updated: string[] = [];
+    const failed: Array<{ username: string; error: string }> = [];
+    for (const username of usernames) {
+      const email = mappingsByUsername.get(username);
+      if (!email) {
+        failed.push({ username, error: "Username belum terdaftar." });
+        continue;
+      }
+      const user = authUsers.find((candidate) => candidate.email === email);
+      if (!user) {
+        failed.push({ username, error: "Akun autentikasi tidak ditemukan." });
+        continue;
+      }
+      const { error } = await adminClient.auth.admin.updateUserById(user.id, {
+        password: input.temporaryPassword,
+        user_metadata: {
+          ...user.user_metadata,
+          username,
+          must_change_password: true,
+        },
+      });
+      if (error) {
+        console.error(`Bulk password reset failed for ${username}:`, error.message);
+        failed.push({ username, error: "Password gagal diperbarui." });
+      } else {
+        updated.push(username);
+      }
+    }
+
+    return jsonResponse(failed.length ? 207 : 200, {
+      updated,
+      failed,
+      message: failed.length
+        ? "Sebagian password gagal direset. Periksa daftar failed."
+        : "Semua password direset; setiap pengguna wajib menggantinya saat login berikutnya.",
+    }, responseOrigin);
+  }
   if (input.action === "reset-password") {
     const username = String(input.username || "").trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
