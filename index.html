@@ -109,7 +109,7 @@
     }
     main { min-width: 0; padding: 32px clamp(20px, 4vw, 58px) 52px; }
     .topline { align-items: center; display: flex; justify-content: space-between; margin-bottom: 31px; }
-    .developer-watermark { background: rgba(255,255,255,.82); border: 1px solid rgba(111,125,114,.16); border-radius: 999px; color: #747d74; font-size: 10px; font-weight: 600; left: 14px; line-height: 1.4; padding: 4px 9px; pointer-events: none; position: fixed; top: 8px; user-select: none; z-index: 10; }
+    .developer-watermark { background: rgba(255,255,255,.82); border: 1px solid rgba(111,125,114,.16); border-radius: 999px; color: #747d74; font-size: 10px; font-weight: 600; left: 254px; line-height: 1.4; padding: 4px 9px; pointer-events: none; position: fixed; top: 8px; transition: left .22s ease; user-select: none; z-index: 10; }
     .crumb { color: var(--muted); font-size: 12px; }
     .crumb b { color: #434a40; font-weight: 600; }
     .top-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 2px; }
@@ -676,6 +676,7 @@
     function unlockApp(session) {
       authSession = session;
       document.body.classList.remove("auth-locked");
+      positionDeveloperWatermark();
       const username = session.user.user_metadata?.username || session.user.email || "Pengguna";
       document.getElementById("profile-email").textContent = username;
       document.getElementById("profile-avatar").textContent = username.slice(0, 2).toLocaleUpperCase("id-ID");
@@ -1814,18 +1815,36 @@
     const appShell = document.querySelector(".app-shell");
     const sidebar = document.querySelector(".sidebar");
     const sidebarToggle = document.querySelector(".sidebar-toggle");
+    const developerWatermark = document.querySelector(".developer-watermark");
+    function positionDeveloperWatermark() {
+      const main = document.getElementById("main-content");
+      const mainStyle = getComputedStyle(main);
+      developerWatermark.style.left = `${Math.round(main.getBoundingClientRect().left + parseFloat(mainStyle.paddingLeft))}px`;
+    }
+    positionDeveloperWatermark();
+    window.addEventListener("resize", positionDeveloperWatermark);
+    appShell.addEventListener("transitionend", (event) => {
+      if (event.propertyName === "grid-template-columns") positionDeveloperWatermark();
+    });
     sidebarToggle.addEventListener("click", () => {
       const collapsed = appShell.classList.toggle("sidebar-collapsed");
       appShell.classList.remove("sidebar-expanded");
+      positionDeveloperWatermark();
       sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
       sidebarToggle.setAttribute("aria-label", collapsed ? "Lebarkan menu" : "Ciutkan menu");
       sidebarToggle.title = collapsed ? "Lebarkan menu" : "Ciutkan menu";
       sidebarToggle.textContent = collapsed ? "»" : "«";
     });
     sidebar.addEventListener("pointerenter", () => {
-      if (appShell.classList.contains("sidebar-collapsed")) appShell.classList.add("sidebar-expanded");
+      if (appShell.classList.contains("sidebar-collapsed")) {
+        appShell.classList.add("sidebar-expanded");
+        positionDeveloperWatermark();
+      }
     });
-    sidebar.addEventListener("pointerleave", () => appShell.classList.remove("sidebar-expanded"));
+    sidebar.addEventListener("pointerleave", () => {
+      appShell.classList.remove("sidebar-expanded");
+      positionDeveloperWatermark();
+    });
     document.querySelectorAll(".nav-item").forEach((item) => {
       const label = item.querySelector("span:last-child").textContent.trim();
       item.setAttribute("aria-label", label);
