@@ -405,7 +405,7 @@
       <h1>Login Account</h1>
       <p class="auth-description">Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.</p>
       <form class="auth-form" id="login-form">
-        <div class="auth-field"><label for="login-email">Email</label><input class="auth-input" id="login-email" name="email" type="email" autocomplete="username" required placeholder="nama@perusahaan.com"></div>
+        <div class="auth-field"><label for="login-username">Username</label><input class="auth-input" id="login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="Masukkan username"></div>
         <div class="auth-field"><label for="login-password">Password</label><input class="auth-input" id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="Masukkan password"></div>
         <button class="auth-forgot" id="forgot-password" type="button">Lupa password? / Atur password undangan</button>
         <button class="auth-submit" id="login-submit" type="submit">Masuk</button>
@@ -604,6 +604,18 @@
       document.querySelector(".auth-description").textContent = "Buat password baru untuk melanjutkan ke workspace stock opname.";
       showAuthMessage("");
     }
+    async function getFunctionErrorMessage(error) {
+      const response = error.context;
+      if (response && typeof response.json === "function") {
+        try {
+          const payload = await response.json();
+          if (payload?.error) return String(payload.error);
+        } catch (parseError) {
+          console.warn("Could not read the login service error response:", parseError);
+        }
+      }
+      return error.message || "";
+    }
     function normalizeSharedState(source) {
       if (!source || typeof source !== "object" || !Array.isArray(source.products) || !source.activeSession) {
         throw new Error("Format data workspace di database tidak valid.");
@@ -752,35 +764,55 @@
       setLoginBusy(true);
       showAuthMessage("");
       try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email: form.elements.email.value.trim(),
-          password: form.elements.password.value
+        const { data: loginData, error: loginError } = await supabaseClient.functions.invoke("login-with-username", {
+          body: {
+            action: "sign-in",
+            username: form.elements.username.value.trim(),
+            password: form.elements.password.value
+          }
+        });
+        if (loginError) throw loginError;
+        if (!loginData?.access_token || !loginData?.refresh_token) {
+          throw new Error("Layanan login username belum siap. Hubungi admin untuk menyelesaikan setup Supabase.");
+        }
+        const { data, error } = await supabaseClient.auth.setSession({
+          access_token: loginData.access_token,
+          refresh_token: loginData.refresh_token
         });
         if (error) throw error;
         await startAuthenticatedSession(data.session);
       } catch (error) {
-        showAuthMessage(error.message || "Login gagal. Periksa email dan password.");
+        const message = await getFunctionErrorMessage(error) || "Login gagal. Periksa username dan password.";
+        showAuthMessage(/failed to send a request|function .*not found|failed to fetch/i.test(message)
+          ? "Login username belum aktif. Minta admin memasang Edge Function Supabase mengikuti README."
+          : message);
       } finally {
         setLoginBusy(false);
       }
     }
     async function sendPasswordReset() {
-      const email = document.getElementById("login-email").value.trim();
-      if (!email) {
-        showAuthMessage("Masukkan alamat email akun Anda terlebih dahulu.");
-        document.getElementById("login-email").focus();
+      const username = document.getElementById("login-username").value.trim();
+      if (!username) {
+        showAuthMessage("Masukkan username akun Anda terlebih dahulu.");
+        document.getElementById("login-username").focus();
         return;
       }
       const button = document.getElementById("forgot-password");
       button.disabled = true;
       try {
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
+        const { data, error } = await supabaseClient.functions.invoke("login-with-username", {
+          body: { action: "reset-password", username }
+        });
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         const message = document.getElementById("auth-message");
-        showAuthMessage("Jika email tersebut terdaftar, tautan untuk mengatur password telah dikirim.");
+        showAuthMessage(data?.message || "Jika username terdaftar, tautan untuk mengatur password telah dikirim ke email akun.");
         message.classList.add("success");
       } catch (error) {
-        showAuthMessage(error.message || "Tautan pengaturan password gagal dikirim.");
+        const detail = await getFunctionErrorMessage(error);
+        showAuthMessage(/failed to send a request|function .*not found|failed to fetch/i.test(detail)
+          ? "Layanan login username belum aktif. Minta admin memasang Edge Function Supabase mengikuti README."
+          : detail || "Tautan pengaturan password gagal dikirim.");
       } finally {
         button.disabled = false;
       }

@@ -5,11 +5,21 @@ create table if not exists public.stock_opname_state (
   updated_by uuid not null references auth.users(id)
 );
 
+create table if not exists public.stock_opname_usernames (
+  username text primary key check (username = lower(username) and username ~ '^[a-z0-9][a-z0-9._-]{2,29}$'),
+  email text not null unique check (email = lower(email)),
+  created_at timestamptz not null default now()
+);
+
 alter table public.stock_opname_state enable row level security;
+alter table public.stock_opname_usernames enable row level security;
 
 revoke all on table public.stock_opname_state from anon;
 revoke all on table public.stock_opname_state from authenticated;
 grant select, insert, update on table public.stock_opname_state to authenticated;
+revoke all on table public.stock_opname_usernames from anon;
+revoke all on table public.stock_opname_usernames from authenticated;
+grant select on table public.stock_opname_usernames to service_role;
 
 drop policy if exists "Team members can read shared stock opname state" on public.stock_opname_state;
 create policy "Team members can read shared stock opname state"
