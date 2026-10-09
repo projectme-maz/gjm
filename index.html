@@ -285,6 +285,7 @@
     .workspace-pic-fields .workspace-name-input { font-weight: 500; }
     .workspace-name-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
     .workspace-row.current { background: #f6faf5; }
+    .workspace-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .dashboard-page { animation: dashboard-enter .32s ease both; }
     @keyframes dashboard-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
     .dashboard-overview { align-items: flex-end; display: flex; justify-content: space-between; margin: -5px 0 20px; }
@@ -472,6 +473,11 @@
     <div class="confirm-body" id="delete-completed-session-message"></div>
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-completed-session-dialog">Batal</button><button class="button button-danger" id="confirm-delete-completed-session" type="button">Hapus sesi</button></div>
   </dialog>
+  <dialog id="delete-workspace-dialog">
+    <div class="dialog-head"><div><div class="dialog-title">Hapus sesi workspace?</div><div class="dialog-subtitle">Data sesi dan arsip stock opname terkait akan dihapus permanen.</div></div><button class="dialog-close" type="button" data-close="delete-workspace-dialog" aria-label="Tutup">×</button></div>
+    <div class="confirm-body" id="delete-workspace-message"></div>
+    <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-workspace-dialog">Batal</button><button class="button button-danger" id="confirm-delete-workspace" type="button">Hapus sesi</button></div>
+  </dialog>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -518,6 +524,7 @@
     let currentPage = "opname";
     let selectedCompletedSessionId = "";
     let pendingCompletedSessionDeletionId = "";
+    let pendingWorkspaceDeletionId = "";
     let searchTerm = "";
     let toastTimer;
     let authSession = null;
@@ -1314,17 +1321,79 @@
         const status = data.activeSession.status === "completed" ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
         const statusClass = data.activeSession.status === "completed" ? "match" : data.products.length ? "different" : "pending";
         const serials = Object.keys(data.serialMaster || {}).length;
-        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}"></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}"></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span></td><td><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button></td></tr>`;
+        const deleteButton = isSuperAdmin()
+          ? `<button class="button button-danger" type="button" data-delete-workspace="${escapeHtml(workspace.id)}" ${state.workspaces.length <= 1 ? 'disabled title="Minimal satu sesi harus dipertahankan."' : ""}>Hapus</button>`
+          : "";
+        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}"></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}"></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
       }).join("");
-      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Lima sesi tersedia sejak awal. Tambahkan sesi baru jika diperlukan; setiap sesi memiliki master dan hasil scan sendiri.</p></div><div class="head-buttons"><button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+      const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Lima sesi tersedia sejak awal. Penambahan dan penghapusan sesi hanya dapat dilakukan Super Admin.</p></div><div class="head-buttons">${addButton}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
     }
 
     function addWorkspace() {
-      const workspace = createWorkspace(state.workspaces.length + 1);
+      if (!isSuperAdmin()) {
+        notify("Hanya Super Admin yang dapat menambah sesi.");
+        return;
+      }
+      let index = 1;
+      const existingNames = new Set(state.workspaces.map((workspace) => workspace.name));
+      while (existingNames.has(`Sesi ${index}`)) index++;
+      const workspace = createWorkspace(index);
       state.workspaces.push(workspace);
       persist();
       render();
       notify(`${workspace.name} berhasil ditambahkan.`);
+    }
+
+    function requestDeleteWorkspace(workspaceId) {
+      if (!isSuperAdmin()) {
+        notify("Hanya Super Admin yang dapat menghapus sesi.");
+        return;
+      }
+      const workspace = state.workspaces.find((item) => item.id === workspaceId);
+      if (!workspace) {
+        notify("Sesi tidak ditemukan. Daftar sesi tidak berubah.");
+        return;
+      }
+      if (state.workspaces.length <= 1) {
+        notify("Minimal satu sesi harus dipertahankan.");
+        return;
+      }
+      pendingWorkspaceDeletionId = workspaceId;
+      document.getElementById("delete-workspace-message").textContent = `Sesi "${workspace.name || "Tanpa nama"}", seluruh data master, scan, aktivitas, dan arsip stock opname terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
+      document.getElementById("delete-workspace-dialog").showModal();
+    }
+
+    function deleteWorkspace() {
+      if (!isSuperAdmin()) {
+        pendingWorkspaceDeletionId = "";
+        document.getElementById("delete-workspace-dialog").close();
+        notify("Hanya Super Admin yang dapat menghapus sesi.");
+        return;
+      }
+      const workspace = state.workspaces.find((item) => item.id === pendingWorkspaceDeletionId);
+      if (!workspace || state.workspaces.length <= 1) {
+        pendingWorkspaceDeletionId = "";
+        document.getElementById("delete-workspace-dialog").close();
+        notify(workspace ? "Minimal satu sesi harus dipertahankan." : "Sesi tidak ditemukan. Daftar sesi tidak berubah.");
+        return;
+      }
+      const workspaceId = workspace.id;
+      if (workspaceId === state.currentWorkspaceId) {
+        persist();
+        const nextWorkspace = state.workspaces.find((item) => item.id !== workspaceId);
+        state.currentWorkspaceId = nextWorkspace.id;
+        Object.assign(state, snapshotWorkspaceData(nextWorkspace.data));
+      }
+      const deletedSessionIds = new Set(state.sessions.filter((session) => session.workspaceId === workspaceId).map((session) => session.id));
+      state.workspaces = state.workspaces.filter((item) => item.id !== workspaceId);
+      state.sessions = state.sessions.filter((session) => session.workspaceId !== workspaceId);
+      if (deletedSessionIds.has(selectedCompletedSessionId)) selectedCompletedSessionId = "";
+      pendingWorkspaceDeletionId = "";
+      document.getElementById("delete-workspace-dialog").close();
+      persist();
+      render();
+      notify(`Sesi ${workspace.name || "workspace"} dan arsip terkait berhasil dihapus.`);
     }
 
     function render() {
@@ -1407,6 +1476,7 @@
       document.getElementById("new-session-button")?.addEventListener("click", startNewSession);
       document.getElementById("workbook-input").addEventListener("change", importWorkbook);
       document.querySelectorAll("[data-open-workspace]").forEach((button) => button.addEventListener("click", () => switchWorkspace(button.dataset.openWorkspace)));
+      document.querySelectorAll("[data-delete-workspace]").forEach((button) => button.addEventListener("click", () => requestDeleteWorkspace(button.dataset.deleteWorkspace)));
       document.querySelectorAll("[data-dashboard-workspace]").forEach((button) => button.addEventListener("click", () => {
         const workspaceId = button.dataset.dashboardWorkspace;
         if (workspaceId === state.currentWorkspaceId) {
@@ -1868,6 +1938,7 @@
     document.getElementById("confirm-finish").addEventListener("click", finishSession);
     document.getElementById("confirm-delete-master").addEventListener("click", deleteAllMasterData);
     document.getElementById("confirm-delete-completed-session").addEventListener("click", deleteCompletedSession);
+    document.getElementById("confirm-delete-workspace").addEventListener("click", deleteWorkspace);
     document.getElementById("login-form").addEventListener("submit", signIn);
     document.getElementById("password-setup-form").addEventListener("submit", saveNewPassword);
     document.getElementById("logout-button").addEventListener("click", signOut);

@@ -52,3 +52,37 @@ drop trigger if exists set_stock_opname_state_updated_at on public.stock_opname_
 create trigger set_stock_opname_state_updated_at
   before update on public.stock_opname_state
   for each row execute function public.set_stock_opname_state_updated_at();
+
+create or replace function public.guard_stock_opname_workspace_membership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  old_workspace_ids text[];
+  new_workspace_ids text[];
+begin
+  select array_agg(workspace ->> 'id' order by workspace ->> 'id')
+    into old_workspace_ids
+    from jsonb_array_elements(coalesce(old.data -> 'workspaces', '[]'::jsonb)) as workspace;
+  select array_agg(workspace ->> 'id' order by workspace ->> 'id')
+    into new_workspace_ids
+    from jsonb_array_elements(coalesce(new.data -> 'workspaces', '[]'::jsonb)) as workspace;
+
+  if old_workspace_ids is distinct from new_workspace_ids
+    and (
+      coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') <> 'super_admin'
+      or coalesce(auth.jwt() -> 'app_metadata' ->> 'owner_username', '') <> 'indra'
+    ) then
+    raise exception 'Only the workspace super admin can add or remove workspaces.'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_stock_opname_workspace_membership on public.stock_opname_state;
+create trigger guard_stock_opname_workspace_membership
+  before update on public.stock_opname_state
+  for each row execute function public.guard_stock_opname_workspace_membership();
