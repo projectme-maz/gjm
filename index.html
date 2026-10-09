@@ -1,0 +1,1401 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5ef">
+  <title>STOCK OPNAME | Rekonsiliasi SN</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1d2b22;
+      --muted: #6f7d72;
+      --line: #e2e9e1;
+      --canvas: #f3f7f2;
+      --paper: #fff;
+      --green: #286344;
+      --green-dark: #194a32;
+      --green-soft: #e6f2e8;
+      --lime: #c9eb9d;
+      --amber: #9c681c;
+      --amber-soft: #fbf1dc;
+      --red: #a6473f;
+      --red-soft: #f8eae7;
+      --shadow: 0 14px 38px rgba(29, 53, 36, .1);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at 88% 0%, rgba(218, 237, 216, .48), transparent 34%), var(--canvas); color: var(--ink); font: 14px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(61, 132, 83, .23); outline-offset: 2px; }
+    .app-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+    .app-shell.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
+    .app-shell.sidebar-collapsed.sidebar-expanded { grid-template-columns: 240px minmax(0, 1fr); }
+    .sidebar { background: linear-gradient(180deg, #245b3d 0%, #194a32 100%); border-right: 1px solid #194a32; box-shadow: 5px 0 24px rgba(33, 61, 40, .12); color: #f4f8f2; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; padding: 27px 17px 18px; position: sticky; top: 0; }
+    .app-shell, .sidebar { transition: grid-template-columns .22s ease, padding .22s ease; }
+    .brand { align-items: center; display: flex; gap: 11px; padding: 0 11px; }
+    .brand-copy { min-width: 0; }
+    .sidebar-toggle { align-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 7px; color: #edf5ed; display: inline-flex; flex: 0 0 28px; font-size: 16px; height: 28px; justify-content: center; margin-left: auto; padding: 0; transition: background .15s ease, transform .2s ease; width: 28px; }
+    .sidebar-toggle:hover { background: rgba(255,255,255,.2); }
+    .brand-mark { align-items: center; background: linear-gradient(145deg, #347a51, #194a32); border: 1px solid rgba(255,255,255,.2); border-radius: 12px 12px 12px 4px; box-shadow: 0 5px 12px rgba(15, 48, 29, .26), inset 0 1px rgba(255,255,255,.14); color: var(--lime); display: flex; height: 40px; justify-content: center; width: 40px; }
+    .brand-mark svg { filter: drop-shadow(0 1px 1px rgba(10,35,19,.25)); height: 25px; width: 25px; }
+    .brand-name { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 15px; font-weight: 800; letter-spacing: .25px; }
+    .brand-caption { color: #c3d7c5; font-size: 11px; margin-top: 1px; }
+    .nav-label { color: #b3cbb7; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; margin: 40px 12px 10px; text-transform: uppercase; }
+    .nav-list + .nav-label { margin-top: 24px; }
+    .nav-list { display: grid; gap: 6px; }
+    .nav-item { align-items: center; background: transparent; border: 0; border-radius: 9px; color: #e0ebe0; display: flex; gap: 12px; min-height: 44px; padding: 0 12px; text-align: left; transition: background .16s ease, color .16s ease, transform .16s ease; width: 100%; }
+    .nav-item:hover { background: rgba(255,255,255,.1); color: #fff; transform: translateX(2px); }
+    .nav-item.active { background: linear-gradient(100deg, #d9efcf, #eff8e9); box-shadow: inset 3px 0 var(--lime); color: #194a32; font-weight: 700; }
+    .nav-icon { align-items: center; color: inherit; display: inline-flex; font-size: 16px; justify-content: center; width: 18px; }
+    .sidebar-bottom { border-top: 1px solid rgba(255,255,255,.2); margin-top: auto; padding: 17px 9px 0; }
+    .profile { align-items: center; display: flex; gap: 10px; }
+    .avatar { align-items: center; background: #f0e8d9; border-radius: 50%; color: #76562e; display: flex; font-size: 11px; font-weight: 700; height: 33px; justify-content: center; width: 33px; }
+    .profile-name { font-size: 12px; font-weight: 700; }
+    .profile-role { color: #c3d7c5; font-size: 11px; margin-top: 1px; }
+    @media (min-width: 651px) {
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .sidebar { align-items: center; padding-left: 10px; padding-right: 10px; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .brand { flex-wrap: wrap; justify-content: center; padding: 0; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .brand-copy,
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-label,
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-item > span:last-child,
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .profile > div:last-child { display: none; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .brand-mark { flex: 0 0 40px; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .sidebar-toggle { margin: 8px 0 0; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-list { width: 100%; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-item { justify-content: center; padding: 0; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-item:hover { transform: none; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .nav-icon { width: auto; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .sidebar-bottom { padding-left: 0; padding-right: 0; }
+      .app-shell.sidebar-collapsed:not(.sidebar-expanded) .profile { justify-content: center; }
+    }
+    main { min-width: 0; padding: 32px clamp(20px, 4vw, 58px) 52px; }
+    .topline { align-items: center; display: flex; justify-content: space-between; margin-bottom: 31px; }
+    .crumb { color: var(--muted); font-size: 12px; }
+    .crumb b { color: #434a40; font-weight: 600; }
+    .top-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 2px; }
+    .today { color: #656c61; font-size: 12px; }
+    .top-pics { color: var(--muted); font-size: 10px; text-align: right; }
+    .page-head { align-items: flex-end; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 25px; }
+    h1 { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: clamp(26px, 3vw, 34px); letter-spacing: 0; line-height: 1.15; margin: 0; }
+    .subtitle { color: var(--muted); margin: 8px 0 0; }
+    .head-buttons { align-items: center; display: flex; gap: 9px; }
+    .button { align-items: center; border: 1px solid transparent; border-radius: 8px; display: inline-flex; font-size: 12px; font-weight: 700; gap: 8px; justify-content: center; min-height: 39px; padding: 0 14px; transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease; white-space: nowrap; }
+    .button:active { transform: translateY(1px); }
+    .button-primary { background: linear-gradient(135deg, #31744b, var(--green)); box-shadow: 0 3px 8px rgba(40, 99, 68, .14); color: #fff; }
+    .button-primary:hover { background: var(--green-dark); box-shadow: 0 5px 12px rgba(40, 99, 68, .2); }
+    .button-secondary { background: #fff; border-color: var(--line); color: #41483f; }
+    .button-secondary:hover { background: #f9faf7; border-color: #cbd1c7; }
+    .button-danger { background: var(--red-soft); border-color: #efd2cc; color: var(--red); }
+    .button-danger:hover { background: #f4deda; }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    .icon-plus { font-size: 18px; font-weight: 400; line-height: 1; }
+    .session-strip { align-items: center; background: linear-gradient(115deg, #194a32 0%, #286344 62%, #39754c 100%); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; box-shadow: 0 10px 24px rgba(29, 74, 50, .16); color: #fff; display: flex; justify-content: space-between; margin-bottom: 17px; min-height: 82px; overflow: hidden; padding: 16px 21px; position: relative; }
+    .session-strip:after { background: var(--lime); border-radius: 50%; content: ""; height: 210px; opacity: .12; position: absolute; right: 18%; top: -151px; width: 210px; }
+    .session-info, .session-actions { position: relative; z-index: 1; }
+    .session-kicker { color: #c7ddcd; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .session-title { font-size: 15px; font-weight: 700; margin-top: 4px; }
+    .session-meta { color: #d0dfd3; font-size: 11px; margin-top: 2px; }
+    .session-actions { align-items: center; display: flex; gap: 15px; }
+    .status-pill { align-items: center; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.15); border-radius: 99px; color: #edf4ed; display: inline-flex; font-size: 10px; gap: 6px; padding: 5px 9px; }
+    .status-dot { background: var(--lime); border-radius: 50%; height: 6px; width: 6px; }
+    .session-actions .button { background: var(--lime); color: #1e3827; }
+    .session-actions .button:hover { background: #d7efb8; }
+    .metric-grid { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 18px; }
+    .metric { background: linear-gradient(145deg, #fff, #fbfdf9); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 4px 13px rgba(35, 59, 38, .035); min-height: 99px; padding: 16px 18px; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+    .metric:hover { border-color: #c9ddcb; box-shadow: 0 9px 20px rgba(35, 59, 38, .08); transform: translateY(-2px); }
+    .metric-top { align-items: center; color: var(--muted); display: flex; font-size: 11px; justify-content: space-between; }
+    .metric-mark { align-items: center; background: #eaf3e9; border-radius: 7px; color: var(--green); display: flex; font-size: 12px; height: 25px; justify-content: center; width: 25px; }
+    .metric-value { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 0; line-height: 1; margin-top: 12px; }
+    .metric-value small { color: var(--muted); font-family: "DM Sans", "Segoe UI", sans-serif; font-size: 11px; font-weight: 500; }
+    .progress-panel { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 7px; display: flex; gap: 18px; margin-bottom: 22px; padding: 13px 17px; }
+    .progress-copy { min-width: 145px; }
+    .progress-copy strong { display: block; font-size: 11px; }
+    .progress-copy span { color: var(--muted); font-size: 10px; }
+    .progress-track { background: #edf0e9; border-radius: 99px; flex: 1; height: 7px; overflow: hidden; }
+    .progress-fill { background: #80a95d; border-radius: inherit; height: 100%; transition: width .25s ease; }
+    .progress-percent { color: var(--green); font-size: 12px; font-weight: 700; min-width: 37px; text-align: right; }
+    .scan-input { background: #fbfcf9; border: 1px solid #dce1d8; border-radius: 5px; font-size: 13px; height: 40px; min-width: 0; outline: 0; padding: 0 12px; width: 100%; }
+    .scan-input:focus { background: #fff; border-color: #739b7c; box-shadow: 0 0 0 3px rgba(40, 93, 69, .1); }
+    .issue-count { color: var(--red); }
+    .qty-input { background: #fff; border: 1px solid #dce1d8; border-radius: 4px; font-size: 11px; height: 29px; outline: 0; padding: 0 7px; width: 66px; }
+    .qty-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
+    .note-input { background: #fff; border: 1px solid #dce1d8; border-radius: 4px; font-size: 11px; height: 30px; min-width: 150px; outline: 0; padding: 0 8px; width: 100%; }
+    .note-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
+    .scan-log { color: #596056; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .scan-log-table { min-width: 520px; }
+    .scan-log .row-status { margin-right: 4px; }
+    .layout-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+    .layout-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 5px 16px rgba(35, 59, 38, .045); min-width: 0; overflow: hidden; position: relative; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .layout-card:hover { border-color: #cbd9ca; box-shadow: 0 10px 24px rgba(35, 59, 38, .085); transform: translateY(-2px); }
+    .layout-card.quantity-matched { background: linear-gradient(145deg, #edf7ed, #e3f1e5); border-color: #b8d2bc; }
+    .layout-card.quantity-matched::before { align-items: center; background: var(--green); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(32, 37, 30, .18); color: #fff; content: "✓"; display: flex; font-size: 11px; font-weight: 800; height: 21px; justify-content: center; left: 50%; line-height: 1; position: absolute; top: 7px; transform: translateX(-50%); width: 21px; z-index: 1; }
+    .layout-card:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(40, 93, 69, .12), 0 9px 24px rgba(35, 59, 38, .08); }
+    .layout-card:focus-within .layout-card-head { background: var(--green-soft); }
+    .layout-card-head { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; gap: 10px; justify-content: space-between; padding: 32px 15px 12px; }
+    .layout-complete-check { align-items: center; background: var(--green); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(32, 37, 30, .18); color: #fff; display: flex; font-size: 11px; font-weight: 800; height: 21px; justify-content: center; left: 50%; line-height: 1; position: absolute; top: 7px; transform: translateX(-50%); width: 21px; z-index: 1; }
+    .layout-card-summary { display: grid; flex: 0 0 auto; gap: 5px; justify-items: end; max-width: 58%; }
+    .layout-name { align-items: center; display: flex; font-size: 14px; font-weight: 700; gap: 5px; }
+    .layout-location { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .layout-count { color: var(--green); font-size: 11px; font-weight: 700; text-align: right; }
+    .layout-quantity-row { align-items: center; display: flex; gap: 6px; justify-content: flex-end; }
+    .layout-quantity-label { color: var(--muted); font-size: 10px; }
+    .layout-quantity-input { font-size: 12px; height: 26px; width: 60px; }
+    .layout-number-input { font-size: 12px; height: 26px; width: 56px; }
+    .layout-quantity-status { font-size: 10px; font-weight: 700; }
+    .layout-quantity-status.match { color: var(--green); }
+    .layout-quantity-status.shortage { color: var(--amber); }
+    .layout-quantity-status.different { color: var(--red); }
+    .layout-quantity-status.pending { color: var(--muted); font-weight: 500; }
+    .layout-form { display: flex; gap: 7px; padding: 12px 14px; }
+    .layout-form .scan-input { height: 36px; }
+    .layout-form .button { min-height: 36px; padding: 0 10px; }
+    .layout-card-foot { border-top: 1px solid #eef0eb; color: var(--muted); font-size: 10px; padding: 10px 14px; }
+    .layout-scan-list { display: grid; gap: 4px; max-height: 230px; overflow-y: auto; }
+    .layout-scan-row { align-items: center; border-bottom: 1px solid #f0f1ed; display: flex; gap: 8px; justify-content: space-between; min-height: 34px; padding: 3px 0; }
+    .layout-scan-info { min-width: 0; overflow-wrap: anywhere; }
+    .layout-scan-status { color: var(--muted); font-size: 9px; }
+    .layout-scan-status.match { color: var(--green); }
+    .layout-scan-status.duplicate, .layout-scan-status.not-found { color: var(--red); }
+    .layout-delete { align-items: center; background: transparent; border: 1px solid transparent; border-radius: 4px; color: #8d544e; display: inline-flex; flex: 0 0 27px; font-size: 17px; height: 27px; justify-content: center; padding: 0; }
+    .layout-delete:hover { background: var(--red-soft); border-color: #efd2cc; }
+    .layout-last-scan { color: #596056; font: 10px/1.6 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+    .scan-warning-icon { align-items: center; background: var(--red-soft); border: 1px solid #efd2cc; border-radius: 50%; color: var(--red); display: inline-flex; font: 700 9px/1 "Segoe UI", sans-serif; height: 14px; justify-content: center; margin-left: 4px; vertical-align: 1px; width: 14px; }
+    .serial-details summary { color: var(--green); cursor: pointer; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .serial-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; max-height: 136px; max-width: 290px; overflow: auto; }
+    .serial-token { background: #f2f4f0; border-radius: 3px; color: #4e574b; font: 10px/1.5 ui-monospace, Consolas, monospace; padding: 2px 5px; white-space: nowrap; }
+    .upload-input { display: none; }
+    .file-note { color: var(--muted); font-size: 10px; margin-top: 7px; }
+    .table-section { background: var(--paper); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 5px 18px rgba(35, 59, 38, .04); overflow: hidden; }
+    .table-toolbar { align-items: center; background: linear-gradient(100deg, #fff, #fbfdf9); border-bottom: 1px solid var(--line); display: flex; gap: 12px; justify-content: space-between; min-height: 61px; padding: 11px 17px; }
+    .table-title { font-size: 13px; font-weight: 700; }
+    .table-count { color: var(--muted); font-size: 11px; font-weight: 400; margin-left: 5px; }
+    .filters { align-items: center; display: flex; gap: 8px; }
+    .search-wrap { position: relative; }
+    .search-icon { color: #969c92; left: 10px; position: absolute; top: 8px; }
+    .search-input, .select-input { background: #fff; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); font-size: 11px; height: 34px; outline: 0; transition: border-color .15s ease, box-shadow .15s ease; }
+    .search-input { padding: 0 10px 0 29px; width: 188px; }
+    .select-input { padding: 0 25px 0 9px; }
+    .search-input:focus, .select-input:focus, .form-control:focus { border-color: #739b7c; box-shadow: 0 0 0 3px rgba(40, 93, 69, .1); }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; min-width: 760px; text-align: left; width: 100%; }
+    th { background: #f7faf6; color: #738176; font-size: 9px; font-weight: 800; letter-spacing: .75px; padding: 12px 15px; text-transform: uppercase; white-space: nowrap; }
+    td { border-top: 1px solid #edf1eb; font-size: 11px; padding: 11px 15px; vertical-align: middle; }
+    tbody tr { transition: background .12s ease; }
+    tbody tr:hover { background: #f6faf5; }
+    .product-cell { align-items: center; display: flex; gap: 10px; min-width: 200px; }
+    .product-thumb { align-items: center; background: #f0f2ec; border-radius: 5px; color: #687661; display: flex; flex: 0 0 31px; font-size: 12px; height: 31px; justify-content: center; }
+    .product-name { font-size: 11px; font-weight: 700; }
+    .product-sku { color: #92988f; font-size: 10px; margin-top: 2px; }
+    .category-chip { background: #edf4eb; border: 1px solid #e4ede1; border-radius: 999px; color: #4f6853; display: inline-block; font-size: 10px; font-weight: 600; padding: 5px 9px; white-space: nowrap; }
+    .number-cell { color: #434a41; font-variant-numeric: tabular-nums; }
+    .count-input { background: #fff; border: 1px solid #dce1d8; border-radius: 4px; color: var(--ink); font-size: 11px; height: 29px; outline: 0; padding: 0 7px; width: 76px; }
+    .count-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
+    .unit { color: var(--muted); font-size: 10px; margin-left: 4px; }
+    .variance { font-size: 10px; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .variance.zero { color: var(--green); }
+    .variance.positive { color: #9b6b20; }
+    .variance.negative { color: var(--red); }
+    .row-status { border-radius: 4px; display: inline-block; font-size: 9px; font-weight: 700; padding: 4px 7px; white-space: nowrap; }
+    .row-status.pending { background: #f1f2ef; color: #73796f; }
+    .row-status.match { background: var(--green-soft); color: var(--green); }
+    .row-status.different { background: var(--amber-soft); color: var(--amber); }
+    .row-status.shortage { background: var(--red-soft); color: var(--red); }
+    .row-status.non-laptop { background: #fff0b8; color: #715719; }
+    .non-laptop-row td { background: #fffbea; }
+    .non-laptop-row:hover td { background: #fff5cf; }
+    .row-action { background: transparent; border: 0; color: #8a9187; font-size: 10px; padding: 5px; }
+    .row-action:hover { color: var(--green); }
+    .empty-row { color: var(--muted); padding: 34px; text-align: center; }
+    .table-footer { align-items: center; border-top: 1px solid var(--line); color: var(--muted); display: flex; font-size: 10px; justify-content: space-between; padding: 11px 15px; }
+    .auto-save { align-items: center; display: inline-flex; gap: 6px; }
+    .save-dot { background: #80a95d; border-radius: 50%; height: 6px; width: 6px; }
+    .history-summary { align-items: center; background: linear-gradient(105deg, #fff, #f9fcf8); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 4px 14px rgba(35, 59, 38, .035); color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 14px; padding: 16px 18px; }
+    .history-summary strong { color: var(--ink); font-size: 12px; }
+    .activity-type { background: #edf4eb; border-radius: 999px; color: #4f6853; display: inline-block; font-size: 9px; font-weight: 700; padding: 4px 8px; white-space: nowrap; }
+    .activity-details { color: #59685c; min-width: 220px; }
+    .activity-time { color: #66766a; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .completed-detail { min-width: 90px; }
+    .completed-detail summary { cursor: pointer; list-style: none; }
+    .completed-detail summary::-webkit-details-marker { display: none; }
+    .completed-detail-panel { background: #f8fbf7; border: 1px solid var(--line); border-radius: 10px; margin-top: 10px; max-height: 70vh; min-width: min(850px, 75vw); overflow: auto; padding: 16px; }
+    .completed-session-view .completed-detail-panel { max-height: none; min-width: 0; }
+    .completed-export-actions { display: flex; gap: 8px; margin: 10px 0; }
+    .completed-detail-panel h3 { font-size: 13px; margin: 0 0 10px; }
+    .completed-racks { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 18px; }
+    .completed-rack { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .completed-rack-title { font-size: 11px; font-weight: 700; }
+    .completed-rack-meta { color: var(--muted); font-size: 10px; margin: 3px 0 7px; }
+    .completed-rack-scan { border-top: 1px solid #edf1eb; font: 10px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; padding: 5px 0; }
+    .completed-result-table { min-width: 720px; }
+    @media print {
+      body.printing-session { background: #fff; }
+      body.printing-session > * { display: none !important; }
+      body.printing-session #print-session-root { display: block !important; padding: 0; }
+      #print-session-root h1 { font-size: 20px; margin-bottom: 4px; }
+      #print-session-root > p { color: #555; font-size: 11px; margin: 0 0 16px; }
+      #print-session-root .completed-detail-panel { background: #fff; border: 0; max-height: none; min-width: 0; overflow: visible; padding: 0; }
+      #print-session-root .completed-racks { grid-template-columns: repeat(3, 1fr); }
+      #print-session-root .completed-rack { break-inside: avoid; }
+      #print-session-root .completed-result-table { font-size: 9px; min-width: 0; }
+      #print-session-root th, #print-session-root td { font-size: 8px; padding: 5px; }
+      #print-session-root h3 { break-after: avoid; }
+    }
+    .workspace-name-input { background: #fff; border: 1px solid #dfe3db; border-radius: 5px; font-size: 11px; font-weight: 700; height: 33px; max-width: 210px; outline: 0; padding: 0 8px; width: 100%; }
+    .workspace-pic-fields { display: grid; gap: 5px; min-width: 145px; }
+    .workspace-pic-fields .workspace-name-input { font-weight: 500; }
+    .workspace-name-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
+    .workspace-row.current { background: #f6faf5; }
+    .dashboard-page { animation: dashboard-enter .32s ease both; }
+    @keyframes dashboard-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .dashboard-overview { align-items: flex-end; display: flex; justify-content: space-between; margin: -5px 0 20px; }
+    .dashboard-overview p { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+    .dashboard-date { color: var(--muted); font-size: 11px; }
+    .dashboard-metrics { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; }
+    .dashboard-metric { background: linear-gradient(145deg, #fff, #fbfdf9); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 5px 18px rgba(35,59,38,.035); min-width: 0; padding: 17px; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .dashboard-metric:hover { border-color: #c9ddcb; box-shadow: 0 10px 25px rgba(35,59,38,.075); transform: translateY(-2px); }
+    .dashboard-metric-label { align-items: center; color: var(--muted); display: flex; font-size: 11px; gap: 8px; justify-content: space-between; }
+    .dashboard-metric-icon { align-items: center; background: #eaf3e9; border-radius: 8px; color: var(--green); display: inline-flex; flex: 0 0 29px; font-size: 14px; height: 29px; justify-content: center; }
+    .dashboard-metric-icon.alert { background: var(--amber-soft); color: var(--amber); }
+    .dashboard-metric-value { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 27px; font-weight: 700; line-height: 1.1; margin-top: 13px; }
+    .dashboard-metric-note { color: var(--muted); font-size: 10px; margin-top: 5px; }
+    .dashboard-charts { display: grid; gap: 14px; grid-template-columns: minmax(240px, .8fr) minmax(0, 1.8fr); margin-bottom: 14px; }
+    .dashboard-panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 5px 18px rgba(35,59,38,.035); min-width: 0; overflow: hidden; }
+    .dashboard-panel-head { align-items: center; border-bottom: 1px solid #edf1eb; display: flex; justify-content: space-between; min-height: 59px; padding: 12px 17px; }
+    .dashboard-panel-title { font-size: 12px; font-weight: 700; }
+    .dashboard-panel-subtitle { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .dashboard-chart-tag { background: #edf4eb; border-radius: 99px; color: var(--green); font-size: 9px; font-weight: 700; padding: 5px 8px; white-space: nowrap; }
+    .dashboard-donut-wrap { align-items: center; display: flex; flex-direction: column; justify-content: center; min-height: 222px; padding: 16px; }
+    .dashboard-donut { height: 132px; position: relative; width: 132px; }
+    .dashboard-donut svg { height: 100%; overflow: visible; transform: rotate(-90deg); width: 100%; }
+    .dashboard-donut circle { fill: none; stroke-width: 11; }
+    .dashboard-donut-track { stroke: #edf1eb; }
+    .dashboard-donut-progress { stroke: #3b8054; stroke-linecap: round; transition: stroke-dasharray .55s ease; }
+    .dashboard-donut-center { align-items: center; display: flex; inset: 0; justify-content: center; position: absolute; text-align: center; }
+    .dashboard-donut-center strong { display: block; font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 26px; line-height: 1; }
+    .dashboard-donut-center span { color: var(--muted); display: block; font-size: 9px; margin-top: 5px; }
+    .dashboard-legend { display: flex; flex-wrap: wrap; gap: 13px; justify-content: center; margin-top: 15px; }
+    .dashboard-legend-item { align-items: center; color: var(--muted); display: inline-flex; font-size: 10px; gap: 6px; }
+    .dashboard-legend-dot { background: #3b8054; border-radius: 50%; height: 7px; width: 7px; }
+    .dashboard-legend-dot.remaining { background: #dfe8dd; }
+    .dashboard-chart-list { display: grid; gap: 16px; padding: 18px 19px; }
+    .dashboard-chart-row { display: grid; gap: 9px; grid-template-columns: minmax(72px, .62fr) minmax(80px, 1.6fr) auto; }
+    .dashboard-chart-name { font-size: 10px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dashboard-chart-count { color: var(--muted); font-size: 9px; text-align: right; white-space: nowrap; }
+    .dashboard-bar-track { align-self: center; background: #edf1eb; border-radius: 99px; height: 8px; overflow: hidden; }
+    .dashboard-bar-fill { background: linear-gradient(90deg, #286344, #86b36a); border-radius: inherit; height: 100%; transition: width .55s cubic-bezier(.2,.75,.25,1); }
+    .dashboard-empty { color: var(--muted); font-size: 10px; padding: 0 19px 17px; }
+    .dashboard-table { margin-bottom: 12px; }
+    .dashboard-table .workspace-name-input { max-width: 190px; }
+    .dashboard-progress-cell { min-width: 145px; }
+    .dashboard-progress-line { align-items: center; display: flex; gap: 8px; }
+    .dashboard-progress-line .dashboard-bar-track { flex: 1; }
+    .dashboard-progress-line strong { color: var(--green); font-size: 10px; min-width: 34px; text-align: right; }
+    .dashboard-open-button { min-height: 32px; padding: 0 10px; }
+    @media (max-width: 900px) {
+      .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .dashboard-charts { grid-template-columns: minmax(0, .9fr) minmax(0, 1.5fr); }
+    }
+    @media (max-width: 650px) {
+      .dashboard-overview { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .dashboard-metrics { gap: 8px; }
+      .dashboard-metric { padding: 13px; }
+      .dashboard-metric-value { font-size: 23px; }
+      .dashboard-charts { grid-template-columns: minmax(0, 1fr); }
+      .dashboard-chart-list { gap: 14px; padding: 15px; }
+      .dashboard-chart-row { grid-template-columns: minmax(64px, .7fr) minmax(70px, 1.5fr) auto; }
+    }
+    .toast { background: #222a22; border-radius: 5px; bottom: 22px; box-shadow: var(--shadow); color: white; font-size: 12px; left: 50%; opacity: 0; padding: 11px 16px; pointer-events: none; position: fixed; transform: translate(-50%, 8px); transition: .2s ease; z-index: 20; }
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+    dialog { border: 0; border-radius: 8px; box-shadow: 0 24px 80px rgba(22,31,23,.24); max-width: calc(100vw - 30px); padding: 0; width: 430px; }
+    dialog::backdrop { background: rgba(22, 30, 23, .4); backdrop-filter: blur(2px); }
+    .dialog-head { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; padding: 19px 21px 15px; }
+    .dialog-title { font-size: 16px; font-weight: 700; }
+    .dialog-subtitle { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .dialog-close { background: transparent; border: 0; color: var(--muted); font-size: 20px; line-height: 1; padding: 0 2px; }
+    .form-grid { display: grid; gap: 13px; grid-template-columns: 1fr 1fr; padding: 18px 21px; }
+    .form-field { display: grid; gap: 6px; }
+    .form-field.wide { grid-column: 1 / -1; }
+    .form-field label { color: #596056; font-size: 10px; font-weight: 700; }
+    .form-control { background: #fff; border: 1px solid #dfe3db; border-radius: 5px; height: 36px; outline: 0; padding: 0 9px; width: 100%; }
+    .dialog-actions { background: #fafbf8; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; padding: 13px 21px; }
+    .confirm-body { color: #5f665c; font-size: 12px; line-height: 1.6; padding: 20px 21px; }
+    .confirm-body strong { color: var(--ink); }
+    @media (max-width: 900px) {
+      .app-shell { grid-template-columns: 190px minmax(0, 1fr); }
+      .sidebar { padding-left: 12px; padding-right: 12px; }
+      .brand { gap: 7px; padding: 0 34px 0 0; position: relative; }
+      .brand-mark { flex: 0 0 34px; height: 34px; width: 34px; }
+      .brand-mark svg { height: 22px; width: 22px; }
+      .brand-name { font-size: 11px; letter-spacing: 0; }
+      .brand-caption { font-size: 9px; }
+      .sidebar-toggle { position: absolute; right: 0; top: 3px; }
+      main { padding-left: 23px; padding-right: 23px; }
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 650px) {
+      .app-shell { display: block; padding-bottom: 62px; }
+      .sidebar { background: linear-gradient(100deg, #245b3d, #194a32); border-bottom: 1px solid #194a32; border-right: 0; bottom: 0; flex-direction: row; height: 61px; left: 0; padding: 5px 9px; position: fixed; right: 0; z-index: 5; }
+      .brand, .nav-label, .sidebar-bottom { display: none; }
+      .nav-list { display: flex; flex: 1; justify-content: space-around; }
+      .nav-item { align-items: center; border-radius: 5px; flex-direction: column; font-size: 9px; gap: 2px; justify-content: center; min-height: 50px; padding: 3px; }
+      .nav-icon { font-size: 15px; }
+      main { padding: 20px 14px 30px; }
+      .topline { margin-bottom: 22px; }
+      .today { display: none; }
+      .page-head { align-items: flex-start; flex-direction: column; gap: 15px; margin-bottom: 17px; }
+      h1 { font-size: 27px; }
+      .head-buttons { width: 100%; }
+      .head-buttons .button { flex: 1; }
+      .session-strip { align-items: flex-start; flex-direction: column; gap: 12px; padding: 15px; }
+      .session-actions { justify-content: space-between; width: 100%; }
+      .metric-grid { gap: 8px; }
+      .metric { min-height: 88px; padding: 12px; }
+      .metric-value { font-size: 22px; margin-top: 9px; }
+      .progress-panel { gap: 10px; padding: 12px; }
+      .progress-copy { min-width: 108px; }
+      .layout-grid { grid-template-columns: minmax(0, 1fr); }
+      .layout-form { padding: 10px; }
+      .table-toolbar { align-items: flex-start; flex-direction: column; }
+      .filters { width: 100%; }
+      .search-wrap { flex: 1; }
+      .search-input { width: 100%; }
+      .select-input { max-width: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
+        <div class="brand-copy"><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div>
+        <button class="sidebar-toggle" type="button" aria-label="Ciutkan menu" aria-expanded="true" title="Ciutkan menu">«</button>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav-list" aria-label="Navigasi utama">
+        <button class="nav-item" data-page="dashboard"><span class="nav-icon">▥</span><span>Dashboard</span></button>
+        <button class="nav-item" data-page="workspaces"><span class="nav-icon">▦</span><span>Jadwal</span></button>
+        <button class="nav-item" data-page="products"><span class="nav-icon">▤</span><span>Master VEF</span></button>
+        <button class="nav-item" data-page="layouts"><span class="nav-icon">▦</span><span>Scan Layout</span></button>
+        <button class="nav-item active" data-page="opname"><span class="nav-icon">⌗</span><span>Result SO</span></button>
+        <button class="nav-item" data-page="recap"><span class="nav-icon">↕</span><span>Rekap Selisih</span></button>
+      </nav>
+      <div class="nav-label">Arsip</div>
+      <nav class="nav-list" aria-label="Arsip stock opname">
+        <button class="nav-item" data-page="history"><span class="nav-icon">◷</span><span>Riwayat Perubahan</span></button>
+        <button class="nav-item" data-page="completed-sessions"><span class="nav-icon">▣</span><span>Sesi Stock Opname</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="profile"><div class="avatar">AD</div><div><div class="profile-name">Admin Gudang</div><div class="profile-role">Gudang utama</div></div></div>
+      </div>
+    </aside>
+    <main id="main-content"></main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input class="upload-input" id="workbook-input" type="file" accept=".xlsx,.xls" aria-label="Pilih workbook stock opname">
+  <dialog id="finish-dialog">
+    <div class="dialog-head"><div><div class="dialog-title">Selesaikan stock opname?</div><div class="dialog-subtitle">Periksa hasil rekonsiliasi sebelum menutup sesi.</div></div><button class="dialog-close" type="button" data-close="finish-dialog" aria-label="Tutup">×</button></div>
+    <div class="confirm-body" id="finish-message"></div>
+    <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="finish-dialog">Kembali</button><button class="button button-primary" id="confirm-finish" type="button">Selesaikan sesi</button></div>
+  </dialog>
+  <dialog id="delete-master-dialog">
+    <div class="dialog-head"><div><div class="dialog-title">Hapus semua data master VEF?</div><div class="dialog-subtitle">Tindakan ini tidak dapat dibatalkan.</div></div><button class="dialog-close" type="button" data-close="delete-master-dialog" aria-label="Tutup">×</button></div>
+    <div class="confirm-body">Semua item, Serial Number, hasil scan, jumlah BOX/PJ, dan catatan sesi aktif akan dihapus dari perangkat ini. <strong>Riwayat opname yang sudah selesai tetap disimpan.</strong></div>
+    <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-master-dialog">Batal</button><button class="button button-danger" id="confirm-delete-master" type="button">Hapus semua data</button></div>
+  </dialog>
+  <dialog id="delete-completed-session-dialog">
+    <div class="dialog-head"><div><div class="dialog-title">Hapus sesi stock opname?</div><div class="dialog-subtitle">Arsip sesi dan detail Scan Layout serta Result SO akan dihapus permanen.</div></div><button class="dialog-close" type="button" data-close="delete-completed-session-dialog" aria-label="Tutup">×</button></div>
+    <div class="confirm-body" id="delete-completed-session-message"></div>
+    <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-completed-session-dialog">Batal</button><button class="button button-danger" id="confirm-delete-completed-session" type="button">Hapus sesi</button></div>
+  </dialog>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const STORAGE_KEY = "ruangstok-sn-v2";
+    const makeSession = () => ({ id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active" });
+    const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
+    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const snapshotWorkspaceData = (source) => ({ products: source.products || [], serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], historyEvents: source.historyEvents || [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts: source.layouts || [...DEFAULT_LAYOUTS], layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} });
+    const createWorkspace = (index, data = emptyWorkspaceData()) => ({ id: crypto.randomUUID(), name: `Sesi ${index}`, picNames: ["", ""], data });
+    let state;
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      state = saved && Array.isArray(saved.products) && saved.activeSession ? saved : initialState();
+    } catch { state = initialState(); }
+    if (!Array.isArray(state.layouts) || !state.layouts.length) state.layouts = [...DEFAULT_LAYOUTS];
+    if (!state.layoutQuantities || typeof state.layoutQuantities !== "object") state.layoutQuantities = {};
+    if (!state.layoutNumbers || typeof state.layoutNumbers !== "object") state.layoutNumbers = {};
+    if (!Array.isArray(state.scanEvents)) state.scanEvents = [];
+    if (!Array.isArray(state.historyEvents)) state.historyEvents = [];
+    if (!Array.isArray(state.sessions)) state.sessions = [];
+    for (const event of state.scanEvents) if (!event.id) event.id = crypto.randomUUID();
+    if (!Array.isArray(state.workspaces) || !state.workspaces.length) {
+      const first = createWorkspace(1, snapshotWorkspaceData(state));
+      state.workspaces = [first, ...Array.from({ length: 4 }, (_, index) => createWorkspace(index + 2))];
+      state.currentWorkspaceId = first.id;
+    } else {
+      state.workspaces = state.workspaces.slice(0, 5);
+      while (state.workspaces.length < 5) state.workspaces.push(createWorkspace(state.workspaces.length + 1));
+      state.workspaces.forEach((workspace, index) => {
+        if (!workspace.id) workspace.id = crypto.randomUUID();
+        if (typeof workspace.name !== "string") workspace.name = `Sesi ${index + 1}`;
+        if (!workspace.data) workspace.data = emptyWorkspaceData();
+        if (!Array.isArray(workspace.picNames)) workspace.picNames = ["", ""];
+        workspace.picNames = [workspace.picNames[0] || "", workspace.picNames[1] || ""];
+      });
+      if (!state.workspaces.some((workspace) => workspace.id === state.currentWorkspaceId)) state.currentWorkspaceId = state.workspaces[0].id;
+      Object.assign(state, snapshotWorkspaceData(state.workspaces.find((workspace) => workspace.id === state.currentWorkspaceId).data));
+    }
+    let currentPage = "opname";
+    let selectedCompletedSessionId = "";
+    let pendingCompletedSessionDeletionId = "";
+    let searchTerm = "";
+    let toastTimer;
+
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    const rackLabel = (layout) => state.layoutNumbers[layout] ? `Rack ${state.layoutNumbers[layout]}` : "Rack";
+    const formatNumber = (value) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(value);
+    const formatRupiah = (value) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
+    const formatDate = (value, options = { day: "numeric", month: "long", year: "numeric" }) => new Intl.DateTimeFormat("id-ID", options).format(new Date(value));
+    function activeWorkspace() {
+      return state.workspaces.find((workspace) => workspace.id === state.currentWorkspaceId);
+    }
+    function activeWorkspaceName() {
+      return activeWorkspace()?.name.trim() || "Nama Brand belum diisi";
+    }
+    function recordActivity(type, description) {
+      state.historyEvents.push({
+        id: crypto.randomUUID(),
+        type,
+        description,
+        workspaceId: state.currentWorkspaceId,
+        sessionId: state.activeSession.id,
+        createdAt: new Date().toISOString()
+      });
+      persist();
+    }
+    function bindAuditedInput(input, onInput, type, describeChange) {
+      input.dataset.auditPrevious = input.value;
+      input.addEventListener("focus", () => { input.dataset.auditPrevious = input.value; });
+      input.addEventListener("input", () => {
+        if (input.dataset.auditPrevious === undefined) input.dataset.auditPrevious = input.value;
+        onInput();
+      });
+      input.addEventListener("change", () => {
+        const previous = input.dataset.auditPrevious;
+        const current = input.value;
+        delete input.dataset.auditPrevious;
+        if (previous !== undefined && previous !== current) recordActivity(type, describeChange(previous, current));
+      });
+    }
+    const persist = () => {
+      const workspace = activeWorkspace();
+      if (workspace) workspace.data = snapshotWorkspaceData(state);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch { notify("Penyimpanan browser penuh. Ekspor hasil agar data tetap aman."); }
+    };
+    const notify = (message) => {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2300);
+    };
+    const normalizeField = (value) => String(value ?? "").toLocaleLowerCase("id-ID").replace(/[^a-z0-9]/g, "");
+    const isLaptopProduct = (product) => {
+      const group = normalizeField(product.itemGroup || "");
+      if (group) return group.includes("laptop") && !group.includes("acc");
+      const sku = String(product.sku || "").toUpperCase();
+      if (/^(AS-VIV|AS-SMB|AS-GAM|AS-TUF|AS-R-|AS-ZEN|AS-EXP)/.test(sku)) return true;
+      const name = String(product.name || "");
+      if (/\b(mouse|keyboard|headset|earbuds|earphone|phone|cooling case|screen protector|xbox ally|accessor(?:y|ies))\b/i.test(name)) return false;
+      return /\b(laptop|notebook|vivobook|zenbook|expertbook)\b|\brog\s+(?:zephyrus|strix|flow|scar)\b|\btuf\b|\bgaming\s+v\d/i.test(name);
+    };
+    const normalizeSerial = (value) => String(value ?? "").trim().toLocaleUpperCase("id-ID");
+    const parseQuantity = (value) => {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      const cleaned = String(value ?? "").trim().replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "");
+      const number = Number(cleaned);
+      return Number.isFinite(number) ? number : 0;
+    };
+    const scannedFor = (productId) => state.scanEvents.filter((event) => event.status === "match" && event.productId === productId).length;
+    const reconciledQty = (product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0);
+    const varianceFor = (product) => reconciledQty(product) - Number(product.stock || 0);
+    const statusFor = (product) => {
+      if (!isLaptopProduct(product)) return { label: "Bukan laptop", className: "non-laptop" };
+      const variance = varianceFor(product);
+      if (variance === 0) return { label: "Sesuai", className: "match" };
+      if (variance < 0) return { label: "Kurang", className: "shortage" };
+      return { label: "Lebih", className: "different" };
+    };
+    const getStats = () => {
+      const laptops = state.products.filter(isLaptopProduct);
+      const matching = laptops.filter((product) => varianceFor(product) === 0).length;
+      const shortages = laptops.filter((product) => varianceFor(product) < 0).length;
+      const surpluses = laptops.filter((product) => varianceFor(product) > 0).length;
+      const scanned = state.scanEvents.filter((event) => event.status === "match").length;
+      const issues = state.scanEvents.filter((event) => event.status === "duplicate" || event.status === "not-found").length;
+      const nonLaptopScans = state.scanEvents.filter((event) => event.status === "non-laptop").length;
+      return { total: laptops.length, nonLaptop: state.products.length - laptops.length, expected: laptops.reduce((sum, product) => sum + Number(product.stock || 0), 0), scanned, matching, shortages, surpluses, issues, nonLaptopScans, percent: laptops.length ? Math.round(matching / laptops.length * 100) : 0 };
+    };
+    const navMarkup = () => {
+      const pics = activeWorkspace()?.picNames || [];
+      const showPics = currentPage === "opname" || currentPage === "layouts" || currentPage === "products";
+      const picMarkup = showPics && pics.some((name) => name.trim()) ? `<span class="top-pics">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</span>` : "";
+      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}</div></div>`;
+    };
+    const productRows = (products) => products.length ? products.map((product, index) => {
+      const laptop = isLaptopProduct(product);
+      const status = laptop ? statusFor(product) : { label: "Bukan laptop", className: "non-laptop" };
+      const variance = laptop ? varianceFor(product) : null;
+      return `<tr class="${laptop ? "" : "non-laptop-row"}">
+        <td class="number-cell">${index + 1}</td>
+        <td><div class="product-cell"><div><div class="product-name">${escapeHtml(product.name)}</div><div class="product-sku">${escapeHtml(product.sku)}</div></div></div></td>
+        <td><span class="category-chip">${escapeHtml(product.brand || "-")}</span></td>
+        <td class="number-cell">${escapeHtml(product.warehouse || "-")}</td>
+        <td class="number-cell">${formatNumber(product.stock)}</td>
+        <td class="number-cell">${laptop ? formatNumber(product.count || 0) : "-"}</td>
+        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah Box ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="box" value="${Number(product.box || 0)}" ${state.activeSession.status !== "active" ? "disabled" : ""}>` : "-"}</td>
+        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" ? "disabled" : ""}>` : "-"}</td>
+        <td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td>
+        <td><span class="row-status ${status.className}">${status.label}</span></td>
+      </tr>`;
+    }).join("") : `<tr><td class="empty-row" colspan="10">${state.importFile ? "Template terbaca, tetapi tab VEF Master belum berisi Serial No dan Item Code." : "Belum ada data VEF. Unggah workbook stock opname untuk memulai."}</td></tr>`;
+
+    function renderOpname() {
+      const stats = getStats();
+      const active = state.activeSession.status === "active";
+      const filtered = state.products.filter((product) => {
+        const query = searchTerm.toLocaleLowerCase("id-ID");
+        return !query || `${product.name} ${product.sku} ${product.brand} ${product.warehouse} ${product.itemGroup || ""}`.toLocaleLowerCase("id-ID").includes(query);
+      });
+      const latestScans = [...state.scanEvents].slice(-8).reverse();
+      return `${navMarkup()}
+        <section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Result SO · Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ.</p></div><div class="head-buttons"><button class="button button-secondary" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
+        <section class="session-strip"><div class="session-info"><div class="session-kicker">Sesi opname · ${escapeHtml(formatDate(state.activeSession.startedAt, { day: "numeric", month: "short", year: "numeric" }))}</div><div class="session-title">${active ? "Rekonsiliasi sedang berjalan" : "Rekonsiliasi selesai"}</div><div class="session-meta">${state.importFile ? `${escapeHtml(state.importFile)}${state.importMessage ? ` · ${escapeHtml(state.importMessage)}` : ""}` : "Unggah workbook di Master VEF untuk memulai sesi."}</div></div><div class="session-actions"><span class="status-pill"><span class="status-dot" style="${active ? "" : "background:#fff"}"></span>${active ? "Sedang berjalan" : "Selesai"}</span>${active ? `<button class="button" id="finish-button" ${!stats.total ? "disabled title=\"Tidak ada laptop yang dapat dihitung\"" : ""}>Selesaikan opname <span>→</span></button>` : `<button class="button" id="new-session-button"><span class="icon-plus">+</span> Mulai sesi baru</button>`}</div></section>
+        <section class="metric-grid" aria-label="Ringkasan stock opname">
+          <div class="metric"><div class="metric-top">Laptop dihitung <span class="metric-mark">▤</span></div><div class="metric-value" id="metric-skus">${stats.total} <small>SKU</small></div></div>
+          <div class="metric"><div class="metric-top">Unit laptop VEF <span class="metric-mark">#</span></div><div class="metric-value" id="metric-expected">${formatNumber(stats.expected)} <small>unit</small></div></div>
+          <div class="metric"><div class="metric-top">SN cocok dipindai <span class="metric-mark">✓</span></div><div class="metric-value" id="metric-scanned">${formatNumber(stats.scanned)} <small>SN</small></div></div>
+          <div class="metric"><div class="metric-top">SN bermasalah <span class="metric-mark issue-count">!</span></div><div class="metric-value" id="metric-issues">${stats.issues} <small>SN</small></div></div>
+        </section>
+        <section class="table-section"><div class="table-toolbar"><div class="table-title">Rekonsiliasi per item <span class="table-count">${filtered.length} dari ${state.products.length} item · ${stats.total} laptop dihitung · ${stats.nonLaptop} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau nama" value="${escapeHtml(searchTerm)}" aria-label="Cari item"></div></div></div>
+          <div class="table-scroll"><table><thead><tr><th>No</th><th>Item / item code</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th></tr></thead><tbody>${productRows(filtered)}</tbody></table></div>
+          <div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Tersimpan otomatis</span><span>Menampilkan ${filtered.length} barang</span></div></section>
+        <section class="table-section" style="margin-top:15px"><div class="table-toolbar"><div class="table-title">Riwayat pemindaian <span class="table-count">${state.scanEvents.length} scan</span></div></div><div class="table-scroll"><table class="scan-log-table"><thead><tr><th>Waktu</th><th>Serial Number</th><th>Item code</th><th>Rack</th><th>Hasil scan</th></tr></thead><tbody>${latestScans.length ? latestScans.map((scan) => `<tr><td>${escapeHtml(formatDate(scan.scannedAt, { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</td><td class="scan-log">${escapeHtml(scan.serial)}</td><td>${escapeHtml(scan.sku || "-")}</td><td>${escapeHtml(rackLabel(scan.layout))}</td><td><span class="row-status ${scan.status === "match" ? "match" : scan.status === "non-laptop" ? "non-laptop" : "shortage"}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ada di VEF"}</span></td></tr>`).join("") : `<tr><td class="empty-row" colspan="5">Belum ada Serial Number yang dipindai.</td></tr>`}</tbody></table></div></section>`;
+    }
+
+    function renderProducts() {
+      const query = searchTerm.toLocaleLowerCase("id-ID");
+      const serialsByProduct = new Map();
+      for (const [serial, master] of Object.entries(state.serialMaster || {})) {
+        if (!serialsByProduct.has(master.productId)) serialsByProduct.set(master.productId, []);
+        serialsByProduct.get(master.productId).push(serial);
+      }
+      for (const serials of serialsByProduct.values()) serials.sort((a, b) => a.localeCompare(b, "id-ID"));
+      const filtered = state.products.filter((product) => !query || `${product.name} ${product.sku} ${product.itemGroup || ""} ${product.brand} ${product.warehouse}`.toLocaleLowerCase("id-ID").includes(query) || (serialsByProduct.get(product.id) || []).some((serial) => serial.toLocaleLowerCase("id-ID").includes(query)));
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Master VEF · Serial Number dipetakan ke item code, brand, dan warehouse.</p></div><div class="head-buttons"><button class="button button-danger" id="delete-master-button" ${state.products.length ? "" : "disabled"}>Hapus semua data</button><button class="button button-primary" id="import-button">↑ Unggah workbook</button></div></section>
+        <section class="table-section"><div class="table-toolbar"><div class="table-title">Master barang <span class="table-count">${filtered.length} item · ${filtered.filter(isLaptopProduct).length} laptop · ${filtered.filter((product) => !isLaptopProduct(product)).length} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau SN" value="${escapeHtml(searchTerm)}" aria-label="Cari master"></div></div></div><div class="table-scroll"><table><thead><tr><th>Item code</th><th>Item name</th><th>Item Group</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>Serial Number</th></tr></thead><tbody>${filtered.length ? filtered.map((product) => { const serials = serialsByProduct.get(product.id) || []; const laptop = isLaptopProduct(product); return `<tr class="${laptop ? "" : "non-laptop-row"}"><td class="number-cell">${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div>${laptop ? "" : `<span class="row-status non-laptop">Bukan laptop</span>`}</td><td>${escapeHtml(product.itemGroup || "-")}</td><td>${escapeHtml(product.brand || "-")}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${serials.length ? `<details class="serial-details"><summary>${formatNumber(serials.length)} SN · tampilkan</summary><div class="serial-list">${serials.map((serial) => `<span class="serial-token">${escapeHtml(serial)}</span>`).join("")}</div></details>` : "-"}</td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="7">Unggah workbook untuk memuat master VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span>${state.serialMaster ? Object.keys(state.serialMaster).length : 0} serial terdaftar</span><span>${escapeHtml(state.importFile || "Belum ada workbook")}</span></div></section>`;
+    }
+
+    function renderLayouts() {
+      const active = state.activeSession.status === "active";
+      const cards = state.layouts.map((layout) => {
+        const rackName = rackLabel(layout);
+        const rackNumber = state.layoutNumbers[layout] || "";
+        const scans = state.scanEvents.filter((event) => event.layout === layout);
+        const target = state.layoutQuantities[layout];
+        const hasTarget = Number.isSafeInteger(target) && target >= 0;
+        const hasRackNumber = Number.isSafeInteger(Number(rackNumber)) && Number(rackNumber) > 0;
+        const matched = scans.filter((event) => event.status === "match").length;
+        const nonLaptopScans = scans.filter((event) => event.status === "non-laptop").length;
+        const issues = scans.length - matched - nonLaptopScans;
+        const quantityStatus = getLayoutQuantityStatus(scans.length, target);
+        return `<section class="layout-card ${scans.length > 0 && quantityStatus.className === "match" ? "quantity-matched" : ""}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${!state.products.length || !active || !hasTarget || !hasRackNumber ? "disabled" : ""}><button class="button button-primary" type="submit" ${!state.products.length || !active || !hasTarget || !hasRackNumber ? "disabled" : ""}>Catat</button></form><div class="layout-card-foot">${scans.length ? `<div class="layout-scan-list">${scans.slice().reverse().map((scan) => `<div class="layout-scan-row"><div class="layout-scan-info"><div class="layout-last-scan">${escapeHtml(scan.serial)}${scan.status === "duplicate" ? `<span class="scan-warning-icon" role="img" aria-label="Peringatan serial duplikat" title="Serial Number duplikat">!</span>` : ""}${scan.sku ? ` · ${escapeHtml(scan.sku)}` : ""}</div><div class="layout-scan-status ${scan.status}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan"}</div></div><button class="layout-delete" type="button" data-delete-scan="${escapeHtml(scan.id)}" aria-label="Hapus scan ${escapeHtml(scan.serial)}" title="Hapus scan">×</button></div>`).join("")}</div>` : "Belum ada scan di rack ini."}</div></section>`;
+      }).join("");
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="category-chip">${state.layouts.length} Rack</span></section>${!state.products.length ? `<div class="history-summary"><strong>Master VEF belum dimuat.</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></div>` : ""}<section class="layout-grid">${cards}</section>`;
+    }
+
+    function getLayoutQuantityStatus(scanCount, target) {
+      if (target === undefined || target === null || target === "") return { className: "pending", label: `Quantity belum diisi · ${scanCount} scan` };
+      if (scanCount === target) return { className: "match", label: `Sesuai · ${scanCount}/${target} scan` };
+      if (scanCount < target) return { className: "shortage", label: `Kurang · ${scanCount}/${target} scan` };
+      return { className: "different", label: `Lebih · ${scanCount}/${target} scan` };
+    }
+
+    function updateLayoutQuantity(input) {
+      const layout = input.dataset.layoutQuantity;
+      const value = input.value.trim();
+      if (!value) delete state.layoutQuantities[layout];
+      else {
+        const quantity = Number(value);
+        if (!Number.isSafeInteger(quantity) || quantity < 0) return;
+        state.layoutQuantities[layout] = quantity;
+      }
+      const scanCount = state.scanEvents.filter((event) => event.layout === layout).length;
+      const status = getLayoutQuantityStatus(scanCount, state.layoutQuantities[layout]);
+      const statusElement = document.querySelector(`[data-layout-quantity-status="${CSS.escape(layout)}"]`);
+      if (statusElement) {
+        statusElement.className = `layout-quantity-status ${status.className}`;
+        statusElement.textContent = status.label;
+      }
+      document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`)?.closest(".layout-card")?.classList.toggle("quantity-matched", scanCount > 0 && status.className === "match");
+      const form = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`);
+      const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
+      const hasRackNumber = Number.isSafeInteger(Number(state.layoutNumbers[layout])) && Number(state.layoutNumbers[layout]) > 0;
+      const canScan = hasTarget && hasRackNumber && state.products.length > 0 && state.activeSession.status === "active";
+      form?.querySelector(".layout-input")?.toggleAttribute("disabled", !canScan);
+      form?.querySelector('button[type="submit"]')?.toggleAttribute("disabled", !canScan);
+      const scanInput = form?.querySelector(".layout-input");
+      if (scanInput) scanInput.placeholder = !hasRackNumber ? "Isi nomor Rack dahulu" : hasTarget ? `Pindai SN di ${rackLabel(layout)}` : "Isi quantity target dahulu";
+      persist();
+    }
+
+    function updateLayoutNumber(input) {
+      const layout = input.dataset.layoutNumber;
+      const value = input.value.trim();
+      if (!value) delete state.layoutNumbers[layout];
+      else {
+        const number = Number(value);
+        if (!Number.isSafeInteger(number) || number < 1) return;
+        state.layoutNumbers[layout] = number;
+      }
+      const name = rackLabel(layout);
+      const nameElement = document.querySelector(`[data-layout-name="${CSS.escape(layout)}"]`);
+      if (nameElement) nameElement.textContent = name;
+      const form = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`);
+      const hasRackNumber = Number.isSafeInteger(Number(state.layoutNumbers[layout])) && Number(state.layoutNumbers[layout]) > 0;
+      const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
+      const canScan = hasRackNumber && hasTarget && state.products.length > 0 && state.activeSession.status === "active";
+      form?.querySelector(".layout-input")?.toggleAttribute("disabled", !canScan);
+      form?.querySelector('button[type="submit"]')?.toggleAttribute("disabled", !canScan);
+      const scanInput = form?.querySelector(".layout-input");
+      if (scanInput) scanInput.placeholder = !hasRackNumber ? "Isi nomor Rack dahulu" : hasTarget ? `Pindai SN di ${name}` : "Isi quantity target dahulu";
+      persist();
+    }
+
+    function renderRecap() {
+      const exceptions = state.products.filter((product) => isLaptopProduct(product) && (varianceFor(product) !== 0 || product.note));
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · Item yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}"></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.length} item diperiksa</span></div></section>`;
+    }
+
+    function renderHistory() {
+      const workspaceNames = new Map(state.workspaces.map((workspace) => [workspace.id, workspace.name]));
+      const activities = state.workspaces.flatMap((workspace) => (workspace.data.historyEvents || []).map((activity) => ({ ...activity, workspaceName: workspaceNames.get(activity.workspaceId) || workspace.name }))).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return `${navMarkup()}<section class="page-head"><div><h1>Riwayat Perubahan</h1><p class="subtitle">Catatan perubahan data dan aktivitas sesi, diurutkan dari yang terbaru.</p></div></section><div class="history-summary"><div><strong>${activities.length} aktivitas tercatat</strong><div style="font-size:10px;margin-top:3px">Riwayat perubahan tersimpan per sesi di perangkat ini.</div></div><span class="category-chip">${activities.length ? `Perubahan terakhir: ${escapeHtml(formatDate(activities[0].createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }))}` : "Belum ada perubahan"}</span></div><section class="table-section"><div class="table-toolbar"><div class="table-title">Riwayat perubahan <span class="table-count">${activities.length} aktivitas · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Waktu</th><th>Sesi</th><th>Aktivitas</th><th>Detail perubahan</th></tr></thead><tbody>${activities.length ? activities.map((activity) => `<tr><td class="activity-time">${escapeHtml(formatDate(activity.createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</td><td>${escapeHtml(activity.workspaceName || "Sesi opname")}</td><td><span class="activity-type">${escapeHtml(activity.type)}</span></td><td class="activity-details">${escapeHtml(activity.description)}</td></tr>`).join("") : `<tr><td class="empty-row" colspan="4">Belum ada perubahan data.</td></tr>`}</tbody></table></div></section>`;
+    }
+
+    function renderCompletedSessions() {
+      const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
+      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk PIC, Scan Layout, dan Result SO.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button></div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="11">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+    }
+
+    function renderCompletedSessionView() {
+      const session = state.sessions.find((item) => item.id === selectedCompletedSessionId && item.snapshot);
+      if (!session) {
+        currentPage = "completed-sessions";
+        return renderCompletedSessions();
+      }
+      const finishedAt = formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || [];
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(session.workspaceName || "Sesi opname")}</h1><p class="subtitle">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")} · Selesai ${escapeHtml(finishedAt)}.</p></div><div class="head-buttons"><button class="button button-secondary" id="back-to-completed-sessions">← Kembali ke daftar sesi</button><button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus sesi</button></div></section><section class="completed-session-view">${renderCompletedSessionDetails(session)}</section>`;
+    }
+
+    function requestDeleteCompletedSession(sessionId) {
+      const session = state.sessions.find((item) => item.id === sessionId);
+      if (!session) return;
+      pendingCompletedSessionDeletionId = sessionId;
+      document.getElementById("delete-completed-session-message").textContent = `Sesi "${session.workspaceName || "Sesi opname"}" beserta data detailnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
+      document.getElementById("delete-completed-session-dialog").showModal();
+    }
+
+    function deleteCompletedSession() {
+      const session = state.sessions.find((item) => item.id === pendingCompletedSessionDeletionId);
+      if (!session) {
+        document.getElementById("delete-completed-session-dialog").close();
+        pendingCompletedSessionDeletionId = "";
+        notify("Sesi tidak ditemukan. Daftar sesi tidak berubah.");
+        return;
+      }
+      state.sessions = state.sessions.filter((item) => item.id !== pendingCompletedSessionDeletionId);
+      const wasSelected = selectedCompletedSessionId === pendingCompletedSessionDeletionId;
+      pendingCompletedSessionDeletionId = "";
+      document.getElementById("delete-completed-session-dialog").close();
+      if (wasSelected) {
+        selectedCompletedSessionId = "";
+        currentPage = "completed-sessions";
+      }
+      persist();
+      render();
+      notify("Sesi stock opname berhasil dihapus.");
+    }
+
+    function renderCompletedSessionDetails(session) {
+      const snapshot = session.snapshot;
+      const scans = snapshot.scanEvents || [];
+      const products = snapshot.products || [];
+      const layouts = snapshot.layouts?.length ? snapshot.layouts : [...new Set(scans.map((scan) => scan.layout).filter(Boolean))];
+      const racks = layouts.map((layout) => {
+        const rackScans = scans.filter((scan) => scan.layout === layout);
+        const target = snapshot.layoutQuantities?.[layout];
+        const rackNumber = snapshot.layoutNumbers?.[layout];
+        const result = getLayoutQuantityStatus(rackScans.length, target);
+        return `<div class="completed-rack"><div class="completed-rack-title">${escapeHtml(rackNumber ? `Rack ${rackNumber}` : layout)}</div><div class="completed-rack-meta">${target === undefined ? `${rackScans.length} scan · target belum diisi` : `${escapeHtml(result.label)}`}</div>${rackScans.length ? rackScans.slice().reverse().map((scan) => `<div class="completed-rack-scan">${escapeHtml(scan.serial)} · ${escapeHtml(scan.sku || "-")} · ${escapeHtml(scan.status === "match" ? "Cocok" : scan.status === "duplicate" ? "Duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan")}</div>`).join("") : `<div class="completed-rack-meta">Belum ada scan.</div>`}</div>`;
+      }).join("");
+      const productRows = products.map((product, index) => {
+        const variance = reconciledQty(product) - Number(product.stock || 0);
+        const laptop = isLaptopProduct(product);
+        const status = laptop ? (variance === 0 ? { label: "Sesuai", className: "match" } : variance < 0 ? { label: "Kurang", className: "shortage" } : { label: "Lebih", className: "different" }) : { label: "Bukan laptop", className: "non-laptop" };
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${laptop ? formatNumber(product.box || 0) : "-"}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
+      }).join("");
+      return `<div class="completed-export-actions"><button class="button button-primary" type="button" data-export-session="${escapeHtml(session.id)}">↓ Ekspor XLSX</button><button class="button button-secondary" type="button" data-print-session="${escapeHtml(session.id)}">▤ Print</button></div><div class="completed-detail-panel"><h3>Scan Layout · ${scans.length} scan</h3><div class="completed-racks">${racks || `<div class="completed-rack-meta">Tidak ada data Rack.</div>`}</div><h3>Result SO · ${products.length} item</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th><th>Note</th></tr></thead><tbody>${productRows || `<tr><td class="empty-row" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div></div>`;
+    }
+
+    function exportCompletedSession(sessionId) {
+      const session = state.sessions.find((item) => item.id === sessionId);
+      if (!session?.snapshot) {
+        notify("Data detail sesi tidak tersedia untuk diekspor.");
+        return;
+      }
+      if (typeof XLSX === "undefined") {
+        notify("Parser Excel tidak termuat. Periksa koneksi internet lalu muat ulang aplikasi.");
+        return;
+      }
+      const snapshot = session.snapshot;
+      const workbook = XLSX.utils.book_new();
+      const scanRows = [["Rack", "Quantity Target", "Jumlah Scan", "Serial Number", "Item Code", "Item Name", "Hasil Scan", "Waktu Scan"]];
+      const layouts = snapshot.layouts?.length ? snapshot.layouts : [...new Set((snapshot.scanEvents || []).map((scan) => scan.layout).filter(Boolean))];
+      for (const layout of layouts) {
+        const rackScans = (snapshot.scanEvents || []).filter((scan) => scan.layout === layout);
+        const rackNumber = snapshot.layoutNumbers?.[layout];
+        const rackName = rackNumber ? `Rack ${rackNumber}` : layout;
+        const target = snapshot.layoutQuantities?.[layout] ?? "";
+        if (!rackScans.length) scanRows.push([rackName, target, 0, "", "", "", "Belum ada scan", ""]);
+        else for (const scan of rackScans) scanRows.push([
+          rackName,
+          target,
+          rackScans.length,
+          scan.serial,
+          scan.sku || "",
+          scan.name || "",
+          scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan",
+          scan.scannedAt ? formatDate(scan.scannedAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : ""
+        ]);
+      }
+      const resultRows = [["No", "Item Code", "Item Name", "Warehouse", "VEF", "SO", "BOX", "PJ", "Selisih", "Check", "Note"]];
+      (snapshot.products || []).forEach((product, index) => {
+        const laptop = isLaptopProduct(product);
+        const variance = reconciledQty(product) - Number(product.stock || 0);
+        resultRows.push([
+          index + 1,
+          product.sku,
+          product.name,
+          product.warehouse || "",
+          Number(product.stock || 0),
+          laptop ? Number(product.count || 0) : "",
+          laptop ? Number(product.box || 0) : "",
+          laptop ? Number(product.pj || 0) : "",
+          laptop ? variance : "",
+          laptop ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop",
+          product.note || ""
+        ]);
+      });
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(scanRows), "Scan Layout");
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(resultRows), "Result SO");
+      const safeName = String(session.workspaceName || "sesi-opname").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim() || "sesi-opname";
+      const date = new Date(session.finishedAt).toISOString().slice(0, 10);
+      try {
+        XLSX.writeFile(workbook, `stock-opname-${safeName}-${date}.xlsx`);
+        notify("Data sesi berhasil diekspor ke XLSX.");
+      } catch (error) {
+        console.error(error);
+        notify("File XLSX gagal dibuat. Coba lagi atau gunakan pilihan Print.");
+      }
+    }
+
+    function printCompletedSession(button) {
+      const session = state.sessions.find((item) => item.id === button.dataset.printSession);
+      const source = button.closest(".completed-session-view")?.querySelector(".completed-detail-panel") || button.closest("details")?.querySelector(".completed-detail-panel");
+      if (!session?.snapshot || !source) {
+        notify("Data detail sesi tidak tersedia untuk dicetak.");
+        return;
+      }
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        notify("Jendela print diblokir browser. Izinkan pop-up untuk mencetak sesi.");
+        return;
+      }
+      const content = source.cloneNode(true);
+      content.querySelectorAll(".completed-export-actions").forEach((element) => element.remove());
+      const title = escapeHtml(session.workspaceName || "Sesi opname");
+      const finishedAt = escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }));
+      printWindow.addEventListener("load", () => {
+        printWindow.focus();
+        printWindow.print();
+      }, { once: true });
+      printWindow.document.open();
+      printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${title} · Stock Opname</title><style>
+        *{box-sizing:border-box}body{color:#20251e;font:12px/1.45 "Segoe UI",Arial,sans-serif;margin:24px}h1{font-size:20px;margin:0 0 3px}p{color:#66716a;font-size:11px;margin:0 0 18px}.completed-detail-panel{border:0;padding:0}.completed-detail-panel h3{font-size:13px;margin:16px 0 9px}.completed-racks{display:grid;gap:8px;grid-template-columns:repeat(3,1fr);margin-bottom:14px}.completed-rack{border:1px solid #dce5db;border-radius:6px;break-inside:avoid;padding:8px}.completed-rack-title{font-size:11px;font-weight:700}.completed-rack-meta{color:#68736b;font-size:9px;margin:3px 0 6px}.completed-rack-scan{border-top:1px solid #edf1eb;font:9px/1.4 Consolas,monospace;overflow-wrap:anywhere;padding:4px 0}.table-scroll{overflow:visible}table{border-collapse:collapse;font-size:9px;min-width:0;text-align:left;width:100%}th,td{border:1px solid #dce5db;font-size:8px;padding:5px;vertical-align:top}th{background:#edf4eb;text-transform:uppercase}.variance,.row-status{font-weight:700}@page{size:landscape;margin:12mm}@media print{body{margin:0}}
+      </style></head><body><h1>${title}</h1><p>Sesi stock opname · selesai ${finishedAt}</p>${content.outerHTML}</body></html>`);
+      printWindow.document.close();
+    }
+
+    function getWorkspaceDashboardStats(workspace) {
+      const data = workspace.data || emptyWorkspaceData();
+      const products = Array.isArray(data.products) ? data.products : [];
+      const laptops = products.filter(isLaptopProduct);
+      const laptopProductIds = new Set(laptops.map((product) => product.id));
+      const serialMaster = data.serialMaster || {};
+      const laptopSerialKeys = new Set(Object.entries(serialMaster)
+        .filter(([, master]) => master && laptopProductIds.has(master.productId))
+        .map(([serial]) => serial));
+      const scanEvents = Array.isArray(data.scanEvents) ? data.scanEvents : [];
+      const matchedSerials = new Set(scanEvents
+        .filter((event) => event.status === "match")
+        .map((event) => event.serialKey || normalizeSerial(event.serial))
+        .filter((serial) => !laptopSerialKeys.size || laptopSerialKeys.has(serial)));
+      const targetSerials = laptopSerialKeys.size || laptops.reduce((total, product) => total + Math.max(0, Number(product.stock) || 0), 0);
+      const scannedSerials = matchedSerials.size;
+      const progress = targetSerials ? Math.min(100, Math.round(scannedSerials / targetSerials * 100)) : 0;
+      const completedProducts = laptops.filter((product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0) === Number(product.stock || 0)).length;
+      const issues = scanEvents.filter((event) => event.status === "duplicate" || event.status === "not-found").length;
+      return {
+        products: products.length,
+        laptopSkus: laptops.length,
+        serials: Object.keys(serialMaster).length,
+        targetSerials,
+        scannedSerials,
+        progress,
+        completedProducts,
+        issues,
+        scans: scanEvents.length,
+        layouts: Array.isArray(data.layouts) ? data.layouts.length : 0,
+        isCompleted: data.activeSession?.status === "completed"
+      };
+    }
+
+    function renderDashboard() {
+      const rows = state.workspaces.map((workspace) => {
+        const stats = getWorkspaceDashboardStats(workspace);
+        const isCurrent = workspace.id === state.currentWorkspaceId;
+        const status = stats.isCompleted ? "Selesai" : stats.products ? "Berjalan" : "Belum dimulai";
+        const statusClass = stats.isCompleted ? "match" : stats.products ? "different" : "pending";
+        return `<tr class="workspace-row ${isCurrent ? "current" : ""}">
+          <td><strong>${escapeHtml(workspace.name || "Nama Brand belum diisi")}</strong>${isCurrent ? '<div class="dashboard-panel-subtitle">Workspace aktif</div>' : ""}</td>
+          <td>${escapeHtml((workspace.picNames || []).filter(Boolean).join(" · ") || "Belum ditentukan")}</td>
+          <td class="dashboard-progress-cell"><div class="dashboard-progress-line"><div class="dashboard-bar-track" role="progressbar" aria-label="Progres SN ${escapeHtml(workspace.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.progress}"><div class="dashboard-bar-fill" style="width:${stats.progress}%"></div></div><strong>${stats.progress}%</strong></div><div class="dashboard-panel-subtitle">${formatNumber(stats.scannedSerials)} / ${formatNumber(stats.targetSerials)} SN</div></td>
+          <td>${formatNumber(stats.completedProducts)} / ${formatNumber(stats.laptopSkus)} laptop cocok</td>
+          <td><span class="row-status ${statusClass}">${status}</span></td>
+          <td><button class="button button-secondary dashboard-open-button" data-dashboard-workspace="${escapeHtml(workspace.id)}">${isCurrent ? "Lihat hasil" : "Buka sesi"} →</button></td>
+        </tr>`;
+      }).join("");
+      const workspaceStats = state.workspaces.map((workspace) => ({ workspace, stats: getWorkspaceDashboardStats(workspace) }));
+      const total = workspaceStats.reduce((sum, item) => ({
+        active: sum.active + Number(!item.stats.isCompleted && item.stats.products > 0),
+        completed: sum.completed + Number(item.stats.isCompleted),
+        products: sum.products + item.stats.products,
+        laptopSkus: sum.laptopSkus + item.stats.laptopSkus,
+        serials: sum.serials + item.stats.targetSerials,
+        scanned: sum.scanned + item.stats.scannedSerials,
+        issues: sum.issues + item.stats.issues
+      }), { active: 0, completed: 0, products: 0, laptopSkus: 0, serials: 0, scanned: 0, issues: 0 });
+      const overallProgress = total.serials ? Math.min(100, Math.round(total.scanned / total.serials * 100)) : 0;
+      const circumference = 2 * Math.PI * 38;
+      const progressLength = (circumference * overallProgress / 100).toFixed(2);
+      const chartRows = workspaceStats.map(({ workspace, stats }) => `<div class="dashboard-chart-row">
+        <span class="dashboard-chart-name" title="${escapeHtml(workspace.name)}">${escapeHtml(workspace.name || "Tanpa nama")}</span>
+        <div class="dashboard-bar-track" role="progressbar" aria-label="Progres SN ${escapeHtml(workspace.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.progress}"><div class="dashboard-bar-fill" style="width:${stats.progress}%"></div></div>
+        <span class="dashboard-chart-count">${stats.progress}% · ${formatNumber(stats.scannedSerials)}/${formatNumber(stats.targetSerials)} SN</span>
+      </div>`).join("");
+      return `${navMarkup()}<div class="dashboard-page">
+        <section class="page-head"><div><h1>Dashboard Workspace</h1><p class="subtitle">Ringkasan aktivitas dan progres stock opname seluruh sesi.</p></div><div class="head-buttons"><button class="button button-secondary" data-page-link="workspaces">Kelola Jadwal →</button></div></section>
+        <div class="dashboard-overview"><p>Pantau pemindaian dan rekonsiliasi dari satu tempat.</p><span class="dashboard-date">${formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" })}</span></div>
+        <section class="dashboard-metrics" aria-label="Statistik seluruh workspace">
+          <article class="dashboard-metric"><div class="dashboard-metric-label">Total workspace <span class="dashboard-metric-icon">▦</span></div><div class="dashboard-metric-value">${state.workspaces.length}</div><div class="dashboard-metric-note">${total.active} sesi berjalan · ${total.completed} sesi selesai</div></article>
+          <article class="dashboard-metric"><div class="dashboard-metric-label">Laptop terdaftar <span class="dashboard-metric-icon">▤</span></div><div class="dashboard-metric-value">${formatNumber(total.laptopSkus)}</div><div class="dashboard-metric-note">${formatNumber(total.products)} item dari seluruh master</div></article>
+          <article class="dashboard-metric"><div class="dashboard-metric-label">SN cocok dipindai <span class="dashboard-metric-icon">✓</span></div><div class="dashboard-metric-value">${formatNumber(total.scanned)}<small> / ${formatNumber(total.serials)}</small></div><div class="dashboard-metric-note">Progres scan keseluruhan ${overallProgress}%</div></article>
+          <article class="dashboard-metric"><div class="dashboard-metric-label">SN bermasalah <span class="dashboard-metric-icon alert">!</span></div><div class="dashboard-metric-value">${formatNumber(total.issues)}</div><div class="dashboard-metric-note">Duplikat atau tidak ditemukan</div></article>
+        </section>
+        <section class="dashboard-charts" aria-label="Grafik progres stock opname">
+          <article class="dashboard-panel"><header class="dashboard-panel-head"><div><div class="dashboard-panel-title">Progres keseluruhan</div><div class="dashboard-panel-subtitle">Serial Number laptop berhasil dipindai</div></div><span class="dashboard-chart-tag">${total.serials ? "Live" : "Menunggu data"}</span></header>
+            <div class="dashboard-donut-wrap"><div class="dashboard-donut"><svg viewBox="0 0 100 100" role="img" aria-label="Progres scan keseluruhan ${overallProgress} persen"><circle class="dashboard-donut-track" cx="50" cy="50" r="38"></circle><circle class="dashboard-donut-progress" cx="50" cy="50" r="38" stroke-dasharray="${progressLength} ${circumference.toFixed(2)}"></circle></svg><div class="dashboard-donut-center"><div><strong>${overallProgress}%</strong><span>terpindai</span></div></div></div>
+              <div class="dashboard-legend"><span class="dashboard-legend-item"><i class="dashboard-legend-dot"></i>${formatNumber(total.scanned)} SN dipindai</span><span class="dashboard-legend-item"><i class="dashboard-legend-dot remaining"></i>${formatNumber(Math.max(0, total.serials - total.scanned))} tersisa</span></div>
+            </div>
+          </article>
+          <article class="dashboard-panel"><header class="dashboard-panel-head"><div><div class="dashboard-panel-title">Progres per sesi</div><div class="dashboard-panel-subtitle">Perbandingan SN terpindai terhadap master laptop</div></div><span class="dashboard-chart-tag">${state.workspaces.length} sesi</span></header><div class="dashboard-chart-list">${chartRows}</div>${total.serials ? "" : '<div class="dashboard-empty">Unggah workbook di Master VEF untuk mulai melihat progres pemindaian.</div>'}</article>
+        </section>
+        <section class="table-section dashboard-table"><div class="table-toolbar"><div class="table-title">Rincian workspace <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Workspace</th><th>PIC</th><th>Progres scan</th><th>Rekonsiliasi</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Progres dihitung dari SN laptop cocok yang telah dipindai.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>
+      </div>`;
+    }
+
+    function renderWorkspaceSchedule() {
+      const rows = state.workspaces.map((workspace) => {
+        const data = workspace.data;
+        const isCurrent = workspace.id === state.currentWorkspaceId;
+        const status = data.activeSession.status === "completed" ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
+        const statusClass = data.activeSession.status === "completed" ? "match" : data.products.length ? "different" : "pending";
+        const serials = Object.keys(data.serialMaster || {}).length;
+        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}"></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}"></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span></td><td><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button></td></tr>`;
+      }).join("");
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Kelola lima sesi terpisah. Setiap sesi memiliki master dan hasil scan sendiri.</p></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah di perangkat ini.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+    }
+
+    function render() {
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === currentPage));
+      const main = document.getElementById("main-content");
+      main.innerHTML = currentPage === "dashboard" ? renderDashboard() : currentPage === "opname" ? renderOpname() : currentPage === "layouts" ? renderLayouts() : currentPage === "workspaces" ? renderWorkspaceSchedule() : currentPage === "products" ? renderProducts() : currentPage === "recap" ? renderRecap() : currentPage === "completed-session-detail" ? renderCompletedSessionView() : currentPage === "completed-sessions" ? renderCompletedSessions() : renderHistory();
+      bindPageEvents();
+    }
+
+    function bindPageEvents() {
+      document.getElementById("import-button")?.addEventListener("click", () => document.getElementById("workbook-input").click());
+      document.getElementById("delete-master-button")?.addEventListener("click", () => document.getElementById("delete-master-dialog").showModal());
+      document.getElementById("export-button")?.addEventListener("click", exportCsv);
+      document.getElementById("finish-button")?.addEventListener("click", openFinishDialog);
+      document.getElementById("new-session-button")?.addEventListener("click", startNewSession);
+      document.getElementById("workbook-input").addEventListener("change", importWorkbook);
+      document.querySelectorAll("[data-open-workspace]").forEach((button) => button.addEventListener("click", () => switchWorkspace(button.dataset.openWorkspace)));
+      document.querySelectorAll("[data-dashboard-workspace]").forEach((button) => button.addEventListener("click", () => {
+        const workspaceId = button.dataset.dashboardWorkspace;
+        if (workspaceId === state.currentWorkspaceId) {
+          currentPage = "opname";
+          render();
+        } else switchWorkspace(workspaceId);
+      }));
+      document.querySelectorAll("[data-page-link]").forEach((button) => button.addEventListener("click", () => {
+        currentPage = button.dataset.pageLink;
+        render();
+      }));
+      document.querySelectorAll("[data-open-completed-session]").forEach((button) => button.addEventListener("click", () => {
+        selectedCompletedSessionId = button.dataset.openCompletedSession;
+        currentPage = "completed-session-detail";
+        render();
+      }));
+      document.querySelectorAll("[data-delete-completed-session]").forEach((button) => button.addEventListener("click", () => requestDeleteCompletedSession(button.dataset.deleteCompletedSession)));
+      document.getElementById("back-to-completed-sessions")?.addEventListener("click", () => {
+        currentPage = "completed-sessions";
+        render();
+      });
+      document.querySelectorAll("[data-export-session]").forEach((button) => button.addEventListener("click", () => exportCompletedSession(button.dataset.exportSession)));
+      document.querySelectorAll("[data-print-session]").forEach((button) => button.addEventListener("click", () => printCompletedSession(button)));
+      document.querySelectorAll("[data-workspace-name]").forEach((input) => input.addEventListener("change", () => {
+        const workspace = state.workspaces.find((item) => item.id === input.dataset.workspaceName);
+        if (!workspace) return;
+        workspace.name = input.value.trim();
+        input.value = workspace.name;
+        persist();
+      }));
+      document.querySelectorAll("[data-workspace-pic]").forEach((input) => input.addEventListener("change", () => {
+        const workspace = state.workspaces.find((item) => item.id === input.dataset.workspacePic);
+        const index = Number(input.dataset.picIndex);
+        if (!workspace || !Number.isInteger(index) || index < 0 || index > 1) return;
+        workspace.picNames[index] = input.value.trim();
+        input.value = workspace.picNames[index];
+        persist();
+      }));
+      document.querySelectorAll("[data-layout-form]").forEach((form) => form.addEventListener("submit", handleLayoutScanSubmit));
+      document.querySelectorAll("[data-layout-quantity]").forEach((input) => bindAuditedInput(input, () => updateLayoutQuantity(input), "Quantity target Rack", (previous, current) => `${rackLabel(input.dataset.layoutQuantity)}: quantity target ${previous || "belum diisi"} → ${current || "dihapus"}.`));
+      document.querySelectorAll("[data-layout-number]").forEach((input) => bindAuditedInput(input, () => updateLayoutNumber(input), "Nomor Rack", (previous, current) => `Nomor ${rackLabel(input.dataset.layoutNumber)} diubah: ${previous || "belum diisi"} → ${current || "dihapus"}.`));
+      document.querySelectorAll("[data-delete-scan]").forEach((button) => button.addEventListener("click", () => deleteScanEvent(button.dataset.deleteScan)));
+      document.querySelectorAll("[data-qty-id]").forEach((input) => bindAuditedInput(input, () => updateQuantity(input), "Jumlah item", (previous, current) => {
+        const field = input.dataset.qtyField === "count" ? "SO" : input.dataset.qtyField.toUpperCase();
+        const product = state.products.find((item) => item.id === input.dataset.qtyId);
+        return `${field} ${product?.sku || ""}: ${previous || "0"} → ${current || "0"}.`;
+      }));
+      document.querySelectorAll("[data-note-sku]").forEach((input) => bindAuditedInput(input, () => {
+        const product = state.products.find((item) => item.sku === input.dataset.noteSku);
+        if (product) { product.note = input.value; persist(); }
+      }, "Catatan", (previous, current) => `Catatan ${input.dataset.noteSku}: ${previous || "kosong"} → ${current || "dihapus"}.`));
+      const search = document.getElementById("search-input");
+      search?.addEventListener("input", () => {
+        const cursor = search.selectionStart;
+        searchTerm = search.value;
+        render();
+        const next = document.getElementById("search-input");
+        next?.focus();
+        next?.setSelectionRange(cursor, cursor);
+      });
+    }
+
+    function switchWorkspace(id) {
+      const workspace = state.workspaces.find((item) => item.id === id);
+      if (!workspace || workspace.id === state.currentWorkspaceId) return;
+      persist();
+      state.currentWorkspaceId = workspace.id;
+      Object.assign(state, snapshotWorkspaceData(workspace.data));
+      currentPage = "opname";
+      searchTerm = "";
+      persist();
+      render();
+      notify(`${workspace.name} dibuka.`);
+    }
+
+    function updateQuantity(input) {
+      const product = state.products.find((item) => item.id === input.dataset.qtyId);
+      if (!product) return;
+      product[input.dataset.qtyField] = parseQuantity(input.value);
+      persist();
+      const variance = varianceFor(product);
+      const status = statusFor(product);
+      const row = input.closest("tr");
+      const varianceCell = row.querySelector(".variance");
+      varianceCell.className = `variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}`;
+      varianceCell.textContent = `${variance > 0 ? "+" : ""}${formatNumber(variance)}`;
+      const statusCell = row.querySelector(".row-status");
+      statusCell.className = `row-status ${status.className}`;
+      statusCell.textContent = status.label;
+      const stats = getStats();
+      document.getElementById("metric-expected").innerHTML = `${formatNumber(stats.expected)} <small>unit</small>`;
+    }
+
+    function addScanEvent(serial, scanEvents = state.scanEvents, layout = "") {
+      const key = normalizeSerial(serial);
+      const master = state.serialMaster[key];
+      const laptop = master ? isLaptopProduct(master) : false;
+      const duplicate = laptop && scanEvents.some((event) => event.serialKey === key && event.status === "match");
+      const status = !master ? "not-found" : !laptop ? "non-laptop" : duplicate ? "duplicate" : "match";
+      const event = { id: crypto.randomUUID(), serial: String(serial).trim(), serialKey: key, productId: master?.productId || "", sku: master?.sku || "", name: master?.name || "", itemGroup: master?.itemGroup || "", layout, status, scannedAt: new Date().toISOString() };
+      scanEvents.push(event);
+      return event;
+    }
+
+    function playScanBeep(status) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        notify("Browser ini tidak mendukung bunyi scan.");
+        return;
+      }
+      const audioContext = new AudioContextClass();
+      const warning = status === "duplicate";
+      const tones = warning ? [{ frequency: 360, offset: 0 }, { frequency: 260, offset: 0.16 }] : [{ frequency: 880, offset: 0 }];
+      tones.forEach(({ frequency, offset }) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const startAt = audioContext.currentTime + offset;
+        const duration = warning ? 0.13 : 0.12;
+        oscillator.type = warning ? "square" : "sine";
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(warning ? 0.12 : 0.16, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(startAt);
+        oscillator.stop(startAt + duration);
+      });
+      setTimeout(() => audioContext.close(), warning ? 500 : 300);
+    }
+
+    function handleLayoutScanSubmit(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const input = form.querySelector(".layout-input");
+      const serial = input.value.trim();
+      if (!serial) return;
+      const layout = form.dataset.layoutForm;
+      const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
+      const hasRackNumber = Number.isSafeInteger(Number(state.layoutNumbers[layout])) && Number(state.layoutNumbers[layout]) > 0;
+      if (!hasTarget || !hasRackNumber) {
+        notify("Isi nomor Rack dan quantity target sebelum scan.");
+        return;
+      }
+      const productBefore = state.products.find((product) => product.id === state.serialMaster[normalizeSerial(serial)]?.productId);
+      const soBefore = productBefore ? scannedFor(productBefore.id) : 0;
+      const scan = addScanEvent(serial, state.scanEvents, layout);
+      playScanBeep(scan.status);
+      state.products.forEach((product) => { product.count = scannedFor(product.id); });
+      const soAfter = productBefore ? scannedFor(productBefore.id) : soBefore;
+      recordActivity("Scan ditambahkan", `${serial} ditambahkan ke ${rackLabel(layout)}${scan.sku ? ` · ${scan.sku}` : ""} (${scan.status === "match" ? "cocok" : scan.status === "duplicate" ? "duplikat" : scan.status === "non-laptop" ? "bukan laptop" : "tidak ditemukan"}).${productBefore && soBefore !== soAfter ? ` SO ${scan.sku}: ${soBefore} → ${soAfter}.` : ""}`);
+      persist();
+      render();
+      document.querySelector(`[data-layout-form="${CSS.escape(layout)}"] .layout-input`)?.focus();
+    }
+
+    function deleteScanEvent(id) {
+      const removed = state.scanEvents.find((event) => event.id === id);
+      if (!removed) return;
+      const productBefore = state.products.find((product) => product.id === removed.productId);
+      const soBefore = productBefore ? scannedFor(productBefore.id) : 0;
+      state.scanEvents = state.scanEvents.filter((event) => event.id !== id);
+      const seen = new Set();
+      for (const event of state.scanEvents) {
+        const key = normalizeSerial(event.serial);
+        const master = state.serialMaster[key];
+        event.serialKey = key;
+        event.productId = master?.productId || "";
+        event.sku = master?.sku || "";
+        event.name = master?.name || "";
+        if (!master) event.status = "not-found";
+        else if (!isLaptopProduct(master)) event.status = "non-laptop";
+        else if (seen.has(key)) event.status = "duplicate";
+        else { event.status = "match"; seen.add(key); }
+      }
+      state.products.forEach((product) => { product.count = scannedFor(product.id); });
+      const soAfter = productBefore ? scannedFor(productBefore.id) : soBefore;
+      recordActivity("Scan dihapus", `${removed.serial} dihapus dari ${rackLabel(removed.layout)}${removed.sku ? ` · ${removed.sku}` : ""}.${productBefore && soBefore !== soAfter ? ` SO ${removed.sku}: ${soBefore} → ${soAfter}.` : ""}`);
+      persist();
+      render();
+      notify(`Scan ${removed.serial} di ${removed.layout} dihapus.`);
+    }
+
+    function normalizeWorkspaceClassifications() {
+      for (const workspace of state.workspaces) {
+        const data = workspace.data;
+        const seen = new Set();
+        for (const event of data.scanEvents || []) {
+          const key = normalizeSerial(event.serial);
+          const master = data.serialMaster?.[key];
+          event.serialKey = key;
+          event.productId = master?.productId || "";
+          event.sku = master?.sku || "";
+          event.name = master?.name || "";
+          event.itemGroup = master?.itemGroup || "";
+          if (!master) event.status = "not-found";
+          else if (!isLaptopProduct(master)) event.status = "non-laptop";
+          else if (seen.has(key)) event.status = "duplicate";
+          else { event.status = "match"; seen.add(key); }
+        }
+        for (const product of data.products || []) {
+          product.count = (data.scanEvents || []).filter((event) => event.status === "match" && event.productId === product.id).length;
+        }
+      }
+      const current = state.workspaces.find((workspace) => workspace.id === state.currentWorkspaceId);
+      if (current) Object.assign(state, snapshotWorkspaceData(current.data));
+    }
+
+    function getSheetRows(workbook, targetName) {
+      const sheetName = workbook.SheetNames.find((name) => name.toLocaleLowerCase("id-ID") === targetName.toLocaleLowerCase("id-ID"));
+      return sheetName ? XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "", raw: false }) : [];
+    }
+
+    function findHeader(rows, requiredGroups) {
+      for (let rowIndex = 0; rowIndex < Math.min(rows.length, 35); rowIndex++) {
+        const headers = rows[rowIndex].map(normalizeField);
+        const indexes = requiredGroups.map((aliases) => headers.findIndex((header) => aliases.some((alias) => header === normalizeField(alias) || header.includes(normalizeField(alias)))));
+        if (indexes.every((index) => index >= 0)) return { rowIndex, indexes };
+      }
+      return null;
+    }
+
+    async function importWorkbook(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      if (typeof XLSX === "undefined") { notify("Parser Excel tidak termuat. Periksa koneksi internet lalu muat ulang aplikasi."); return; }
+      if (state.products.length && state.scanEvents.length && !window.confirm("Workbook baru akan mengganti data sesi yang sedang berjalan. Lanjutkan?")) return;
+      try {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+        const sheetNames = workbook.SheetNames.map((name) => name.toLocaleLowerCase("id-ID"));
+        const isDailyWorkbook = sheetNames.includes("vef master") && sheetNames.includes("scan sn");
+        const isSerialMaster = sheetNames.includes("serial no");
+        if (!isDailyWorkbook && !isSerialMaster) { notify("Workbook perlu memiliki sheet Serial No atau pasangan VEF Master dan Scan SN."); return; }
+        const scanRows = getSheetRows(workbook, "Scan SN");
+        const layoutHeaders = scanRows[1]?.slice(6, 16) || [];
+        const layoutRows = scanRows.slice(2);
+        const columnLayouts = Array.from({ length: 10 }, (_, index) => {
+          const label = String(layoutHeaders[index] || "").trim();
+          const hasScans = layoutRows.some((row) => String(row[index + 6] ?? "").trim());
+          return label || (hasScans ? `Rack ${index + 1}` : "");
+        }).filter(Boolean);
+        const importedLayouts = [...new Set(columnLayouts.length ? columnLayouts : DEFAULT_LAYOUTS)];
+        const vefRows = getSheetRows(workbook, isDailyWorkbook ? "VEF Master" : "Serial No");
+        const vefHeader = findHeader(vefRows, [["serial no", "serial number", "sn"], ["item code"], ["brand"], ["warehouse"], ["item name"]]);
+        const productsByCode = new Map();
+        const serialMaster = {};
+        if (vefHeader) {
+          const [serialIndex, codeIndex, brandIndex, warehouseIndex, nameIndex] = vefHeader.indexes;
+          const vefColumns = vefRows[vefHeader.rowIndex].map(normalizeField);
+          const statusIndex = vefColumns.indexOf("status");
+          const groupIndex = vefColumns.findIndex((value) => value === "itemgroup");
+          for (const row of vefRows.slice(vefHeader.rowIndex + 1)) {
+            const recordStatus = statusIndex >= 0 ? normalizeField(row[statusIndex]) : "";
+            if (recordStatus && recordStatus !== "active") continue;
+            const serial = String(row[serialIndex] ?? "").trim();
+            const sku = String(row[codeIndex] ?? "").trim();
+            if (!serial || !sku) continue;
+            const key = normalizeSerial(serial);
+            if (serialMaster[key]) continue;
+            const warehouse = String(row[warehouseIndex] ?? "").trim();
+            const itemGroup = groupIndex >= 0 ? String(row[groupIndex] ?? "").trim() : "";
+            const productId = `${sku}::${warehouse}`;
+            let product = productsByCode.get(productId);
+            if (!product) {
+              product = { id: productId, sku, name: String(row[nameIndex] ?? "").trim(), itemGroup, brand: String(row[brandIndex] ?? "").trim(), warehouse, stock: 0, count: 0, box: 0, pj: 0, note: "" };
+              productsByCode.set(productId, product);
+            }
+            if (!product.itemGroup) product.itemGroup = itemGroup;
+            product.stock += 1;
+            serialMaster[key] = { productId, sku, name: product.name, itemGroup: product.itemGroup };
+          }
+        }
+        const reconciliationRows = getSheetRows(workbook, "Reconciliation");
+        const reconciliationHeader = findHeader(reconciliationRows, [["item code"], ["vef"], ["box"], ["pj"]]);
+        if (reconciliationHeader) {
+          const [codeIndex, vefIndex, boxIndex, pjIndex] = reconciliationHeader.indexes;
+          const reconciliationColumns = reconciliationRows[reconciliationHeader.rowIndex].map(normalizeField);
+          const nameIndex = reconciliationColumns.findIndex((value) => value === "itemname");
+          const brandIndex = reconciliationColumns.findIndex((value) => value === "brand");
+          const warehouseIndex = reconciliationColumns.findIndex((value) => value === "warehouse");
+          for (const row of reconciliationRows.slice(reconciliationHeader.rowIndex + 1)) {
+            const sku = String(row[codeIndex] ?? "").trim();
+            if (!sku) continue;
+            const warehouse = warehouseIndex >= 0 ? String(row[warehouseIndex] ?? "").trim() : "";
+            const productId = `${sku}::${warehouse}`;
+            const product = productsByCode.get(productId) || { id: productId, sku, name: "", itemGroup: "", brand: "", warehouse, stock: 0, count: 0, box: 0, pj: 0, note: "" };
+            if (!product.stock) product.stock = parseQuantity(row[vefIndex]);
+            if (nameIndex >= 0 && !product.name) product.name = String(row[nameIndex] ?? "").trim();
+            if (brandIndex >= 0 && !product.brand) product.brand = String(row[brandIndex] ?? "").trim();
+            product.box = parseQuantity(row[boxIndex]);
+            product.pj = parseQuantity(row[pjIndex]);
+            productsByCode.set(productId, product);
+          }
+        }
+        const recapRows = getSheetRows(workbook, "Recap");
+        const recapHeader = findHeader(recapRows, [["item"], ["note"]]);
+        if (recapHeader) {
+          const [codeIndex, noteIndex] = recapHeader.indexes;
+          for (const row of recapRows.slice(recapHeader.rowIndex + 1)) {
+            const sku = String(row[codeIndex] ?? "").trim();
+            for (const product of productsByCode.values()) if (product.sku === sku) product.note = String(row[noteIndex] ?? "").trim();
+          }
+        }
+        if (!productsByCode.size) {
+          state.products = [];
+          state.serialMaster = {};
+          state.scanEvents = [];
+          state.layouts = importedLayouts;
+          state.layoutQuantities = {};
+          state.layoutNumbers = {};
+          state.importFile = file.name;
+          state.importMessage = "Template dikenali, tetapi belum ada baris data VEF.";
+          state.activeSession = makeSession();
+          persist();
+          render();
+          notify("Template dikenali. Isi Serial No dan Item Code pada tab VEF Master, lalu unggah ulang.");
+          return;
+        }
+        state.products = [...productsByCode.values()].sort((a, b) => a.sku.localeCompare(b.sku, "id-ID"));
+        state.serialMaster = serialMaster;
+        state.scanEvents = [];
+        state.layouts = importedLayouts;
+        state.layoutQuantities = {};
+        state.layoutNumbers = {};
+        for (const row of layoutRows) for (let index = 0; index < 10; index++) { const serial = row[index + 6]; if (String(serial ?? "").trim()) addScanEvent(serial, state.scanEvents, String(layoutHeaders[index] || `Rack ${index + 1}`).trim()); }
+        state.products.forEach((product) => { product.count = scannedFor(product.id); });
+        state.importFile = file.name;
+        state.importMessage = isDailyWorkbook ? "" : "Master SN siap; mulai scan di aplikasi.";
+        state.lastScan = null;
+        state.activeSession = makeSession();
+        persist();
+        currentPage = "opname";
+        render();
+        notify(`Master dimuat: ${state.products.length} item per warehouse, ${Object.keys(serialMaster).length} serial.`);
+      } catch (error) {
+        console.error(error);
+        notify("Workbook tidak dapat dibaca. Pastikan file Excel valid dan tidak terkunci.");
+      }
+    }
+
+    function openFinishDialog() {
+      const stats = getStats();
+      document.getElementById("finish-message").innerHTML = `Sesi menghitung <strong>${stats.total} SKU laptop</strong> atau <strong>${formatNumber(stats.expected)} unit VEF</strong>. Ada <strong>${stats.shortages} item kurang</strong>, <strong>${stats.surpluses} item lebih</strong>, <strong>${stats.issues} SN bermasalah</strong>, dan <strong>${stats.nonLaptopScans} SN bukan laptop</strong> yang dikecualikan dari SO.`;
+      document.getElementById("finish-dialog").showModal();
+    }
+
+    function finishSession() {
+      const stats = getStats();
+      const finishedAt = new Date().toISOString();
+      const snapshot = JSON.parse(JSON.stringify({
+        products: state.products,
+        scanEvents: state.scanEvents,
+        layouts: state.layouts,
+        layoutQuantities: state.layoutQuantities,
+        layoutNumbers: state.layoutNumbers
+      }));
+      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], startedAt: state.activeSession.startedAt, finishedAt, snapshot });
+      state.activeSession = { ...state.activeSession, status: "completed", finishedAt };
+      recordActivity("Sesi diselesaikan", `Stock opname ${activeWorkspace()?.name || "Sesi opname"} diselesaikan.`);
+      persist();
+      document.getElementById("finish-dialog").close();
+      render();
+      notify("Hasil sesi disimpan ke riwayat.");
+    }
+
+    function startNewSession() {
+      recordActivity("Sesi baru", "Sesi opname baru dimulai; quantity SO, BOX, dan PJ direset.");
+      state.activeSession = makeSession();
+      state.scanEvents = [];
+      state.layoutQuantities = {};
+      state.lastScan = null;
+      state.products.forEach((product) => { product.count = 0; product.box = 0; product.pj = 0; });
+      persist();
+      currentPage = "opname";
+      render();
+      notify("Sesi opname baru dimulai.");
+    }
+
+    function deleteAllMasterData() {
+      state.products = [];
+      state.serialMaster = {};
+      state.scanEvents = [];
+      state.lastScan = null;
+      state.importFile = "";
+      state.importMessage = "";
+      state.layouts = [...DEFAULT_LAYOUTS];
+      state.layoutQuantities = {};
+      state.layoutNumbers = {};
+      state.activeSession = makeSession();
+      persist();
+      document.getElementById("delete-master-dialog").close();
+      currentPage = "products";
+      searchTerm = "";
+      render();
+      notify("Master VEF dan data sesi aktif dihapus. Riwayat selesai tetap tersimpan.");
+    }
+
+    function exportCsv() {
+      const header = ["Item Code", "Item Name", "Item Group", "Brand", "Warehouse", "Jenis", "VEF", "SO", "BOX", "PJ", "Selisih", "Check"];
+      const rows = state.products.map((product) => {
+        const laptop = isLaptopProduct(product);
+        return [product.sku, product.name, product.itemGroup || "", product.brand, product.warehouse, laptop ? "Laptop" : "Bukan laptop", product.stock, laptop ? product.count || 0 : "", laptop ? product.box || 0 : "", laptop ? product.pj || 0 : "", laptop ? varianceFor(product) : "", laptop ? statusFor(product).label : "Bukan laptop"];
+      });
+      const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
+      link.download = `stock-opname-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      notify("Rekonsiliasi CSV berhasil diekspor.");
+    }
+
+    const appShell = document.querySelector(".app-shell");
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarToggle = document.querySelector(".sidebar-toggle");
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = appShell.classList.toggle("sidebar-collapsed");
+      appShell.classList.remove("sidebar-expanded");
+      sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+      sidebarToggle.setAttribute("aria-label", collapsed ? "Lebarkan menu" : "Ciutkan menu");
+      sidebarToggle.title = collapsed ? "Lebarkan menu" : "Ciutkan menu";
+      sidebarToggle.textContent = collapsed ? "»" : "«";
+    });
+    sidebar.addEventListener("pointerenter", () => {
+      if (appShell.classList.contains("sidebar-collapsed")) appShell.classList.add("sidebar-expanded");
+    });
+    sidebar.addEventListener("pointerleave", () => appShell.classList.remove("sidebar-expanded"));
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      const label = item.querySelector("span:last-child").textContent.trim();
+      item.setAttribute("aria-label", label);
+      item.title = label;
+      item.addEventListener("click", () => { currentPage = item.dataset.page; searchTerm = ""; render(); });
+    });
+    document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
+    document.getElementById("confirm-finish").addEventListener("click", finishSession);
+    document.getElementById("confirm-delete-master").addEventListener("click", deleteAllMasterData);
+    document.getElementById("confirm-delete-completed-session").addEventListener("click", deleteCompletedSession);
+    normalizeWorkspaceClassifications();
+    render();
+    persist();
+  </script>
+</body>
+</html>
