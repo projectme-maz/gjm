@@ -55,6 +55,11 @@
     .profile-name { font-size: 12px; font-weight: 700; }
     .profile-role { color: #c3d7c5; font-size: 11px; margin-top: 1px; }
     .profile-email { color: #c3d7c5; font-size: 10px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .admin-notice { border-radius: 8px; font-size: 12px; margin: 14px 0; padding: 10px 12px; }
+    .admin-notice.success { background: var(--green-soft); color: var(--green-dark); }
+    .admin-notice.error { background: var(--red-soft); color: var(--red); }
+    .admin-create-form { align-items: end; display: grid; gap: 10px; grid-template-columns: minmax(180px, 1fr) auto; }
+    .admin-user-status { color: var(--muted); font-size: 11px; }
     .logout-button { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.17); border-radius: 7px; color: #f4f8f2; font-size: 10px; margin-left: auto; padding: 6px 8px; }
     .logout-button:hover { background: rgba(255,255,255,.18); }
     .top-account { align-items: center; display: flex; gap: 9px; }
@@ -438,8 +443,11 @@
         <button class="nav-item" data-page="history"><span class="nav-icon">◷</span><span>Riwayat Perubahan</span></button>
         <button class="nav-item" data-page="completed-sessions"><span class="nav-icon">▣</span><span>Sesi Stock Opname</span></button>
       </nav>
+      <nav class="nav-list" aria-label="Administrasi" style="margin-top: 18px">
+        <button class="nav-item" data-page="admin-users" id="admin-users-nav" hidden><span class="nav-icon">♙</span><span>Kelola Akun</span></button>
+      </nav>
       <div class="sidebar-bottom">
-        <div class="profile"><div class="avatar" id="profile-avatar">AD</div><div class="profile-details"><div class="profile-name">Tim Gudang</div><div class="profile-email" id="profile-email"></div></div><button class="logout-button" id="logout-button" type="button">Keluar</button></div>
+        <div class="profile"><div class="avatar" id="profile-avatar">AD</div><div class="profile-details"><div class="profile-name" id="profile-name">Tim Gudang</div><div class="profile-role" id="profile-role"></div><div class="profile-email" id="profile-email"></div></div><button class="logout-button" id="logout-button" type="button">Keluar</button></div>
       </div>
     </aside>
     <main id="main-content"></main>
@@ -512,6 +520,9 @@
     let toastTimer;
     let authSession = null;
     let pendingPasswordChange = null;
+    let adminUsers = [];
+    let adminNotice = "";
+    let adminNoticeType = "success";
     let sharedStateReady = false;
     let remoteUpdatedAt = "";
     let lastSyncedState = "";
@@ -655,6 +666,8 @@
       refreshTimer = null;
       document.body.classList.add("auth-locked");
       document.getElementById("profile-email").textContent = "";
+      document.getElementById("profile-role").textContent = "";
+      document.getElementById("admin-users-nav").hidden = true;
       document.querySelectorAll(".top-account").forEach((element) => element.remove());
     }
     function unlockApp(session) {
@@ -663,7 +676,12 @@
       const username = session.user.user_metadata?.username || session.user.email || "Pengguna";
       document.getElementById("profile-email").textContent = username;
       document.getElementById("profile-avatar").textContent = username.slice(0, 2).toLocaleUpperCase("id-ID");
+      document.getElementById("profile-name").textContent = username;
+      document.getElementById("profile-role").textContent = isSuperAdmin() ? "Super Admin · Pemilik" : "Staf";
+      document.getElementById("admin-users-nav").hidden = !isSuperAdmin();
     }
+    const isSuperAdmin = () => authSession?.user?.app_metadata?.role === "super_admin"
+      && authSession?.user?.app_metadata?.owner_username === "indra";
     function databaseSetupHint(error) {
       const message = `${error.message || ""} ${error.details || ""}`;
       if (error.code === "PGRST205" || error.code === "42P01" || /stock_opname_state.*(not found|does not exist)|schema cache/i.test(message)) {
@@ -901,7 +919,7 @@
       const pics = activeWorkspace()?.picNames || [];
       const showPics = currentPage === "opname" || currentPage === "layouts" || currentPage === "products";
       const picMarkup = showPics && pics.some((name) => name.trim()) ? `<span class="top-pics">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</span>` : "";
-      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.user_metadata?.username || authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
+      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : currentPage === "admin-users" ? "Kelola Akun" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.user_metadata?.username || authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
     };
     const productRows = (products) => products.length ? products.map((product, index) => {
       const laptop = isLaptopProduct(product);
@@ -1302,11 +1320,75 @@
     function render() {
       document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === currentPage));
       const main = document.getElementById("main-content");
-      main.innerHTML = currentPage === "dashboard" ? renderDashboard() : currentPage === "opname" ? renderOpname() : currentPage === "layouts" ? renderLayouts() : currentPage === "workspaces" ? renderWorkspaceSchedule() : currentPage === "products" ? renderProducts() : currentPage === "recap" ? renderRecap() : currentPage === "completed-session-detail" ? renderCompletedSessionView() : currentPage === "completed-sessions" ? renderCompletedSessions() : renderHistory();
+      if (currentPage === "admin-users" && !isSuperAdmin()) currentPage = "opname";
+      main.innerHTML = currentPage === "dashboard" ? renderDashboard() : currentPage === "opname" ? renderOpname() : currentPage === "layouts" ? renderLayouts() : currentPage === "workspaces" ? renderWorkspaceSchedule() : currentPage === "products" ? renderProducts() : currentPage === "recap" ? renderRecap() : currentPage === "admin-users" ? renderAdminUsers() : currentPage === "completed-session-detail" ? renderCompletedSessionView() : currentPage === "completed-sessions" ? renderCompletedSessions() : renderHistory();
       bindPageEvents();
     }
 
+    function renderAdminUsers() {
+      return `${navMarkup()}<section class="page-head"><div><h1>Kelola Akun Staf</h1><p class="subtitle">Buat akun username, reset password, dan atur akses masuk workspace.</p></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Tambah akun staf</div></div><form class="admin-create-form" id="admin-create-form"><label class="auth-field"><span>Username</span><input class="auth-input" name="username" type="text" minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._-]{2,29}" required placeholder="contoh: stafbaru"></label><button class="button button-primary" type="submit">Buat akun</button></form><div class="admin-notice ${adminNoticeType}" id="admin-notice" ${adminNotice ? "" : "hidden"}>${escapeHtml(adminNotice)}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Daftar akun <span class="table-count">${adminUsers.length} staf</span></div><button class="button button-secondary" id="admin-refresh-users" type="button">Muat ulang</button></div><div class="table-scroll"><table><thead><tr><th>Username</th><th>Status</th><th>Peran</th><th>Aksi</th></tr></thead><tbody>${adminUsers.length ? adminUsers.map((user) => `<tr><td>${escapeHtml(user.username)}</td><td><span class="row-status ${user.disabled ? "pending" : "match"}">${user.disabled ? "Dinonaktifkan" : "Aktif"}</span></td><td>${user.superAdmin ? "Super Admin" : "Staf"}</td><td><button class="button button-secondary" type="button" data-admin-reset="${escapeHtml(user.username)}">Reset password</button> ${user.superAdmin ? "" : `<button class="button button-secondary" type="button" data-admin-toggle="${escapeHtml(user.username)}" data-disabled="${user.disabled}">${user.disabled ? "Aktifkan" : "Nonaktifkan"}</button>`}</td></tr>`).join("") : `<tr><td colspan="4">Belum ada akun staf.</td></tr>`}</tbody></table></div><div class="table-footer"><span>Password sementara ditampilkan satu kali dan harus diganti saat login berikutnya.</span></div></section>`;
+    }
+
+    async function loadAdminUsers() {
+      if (!isSuperAdmin()) return;
+      const { data, error } = await supabaseClient.functions.invoke("admin-users", { body: { action: "list" } });
+      if (error || data?.error) {
+        adminNotice = data?.error || await getFunctionErrorMessage(error) || "Daftar akun gagal dimuat.";
+        adminNoticeType = "error";
+        render();
+        return;
+      }
+      adminUsers = data.users || [];
+      render();
+    }
+
+    function setAdminNotice(message, type = "success") {
+      adminNotice = message;
+      adminNoticeType = type;
+      const notice = document.getElementById("admin-notice");
+      if (notice) {
+        notice.textContent = message;
+        notice.className = `admin-notice ${type}`;
+        notice.hidden = !message;
+      }
+    }
+
+    async function administerUser(action, username, disabled) {
+      if (!isSuperAdmin()) return;
+      if (action === "toggle" && !window.confirm(`${disabled ? "Aktifkan" : "Nonaktifkan"} akun ${username}?`)) return;
+      const body = action === "reset"
+        ? { action: "reset-password", username }
+        : { action: "set-disabled", username, disabled };
+      const { data, error } = await supabaseClient.functions.invoke("admin-users", { body });
+      if (error || data?.error) {
+        setAdminNotice(data?.error || await getFunctionErrorMessage(error) || "Aksi akun gagal.", "error");
+        return;
+      }
+      if (data.temporaryPassword) {
+        setAdminNotice(`Password sementara untuk ${username}: ${data.temporaryPassword} — bagikan secara pribadi; wajib diganti saat login.`);
+      } else {
+        setAdminNotice(data.message || "Aksi akun berhasil.");
+      }
+      await loadAdminUsers();
+    }
+
     function bindPageEvents() {
+      document.getElementById("admin-refresh-users")?.addEventListener("click", loadAdminUsers);
+      document.getElementById("admin-create-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const username = form.elements.username.value.trim().toLowerCase();
+        const { data, error } = await supabaseClient.functions.invoke("admin-users", { body: { action: "create", username } });
+        if (error || data?.error) {
+          setAdminNotice(data?.error || await getFunctionErrorMessage(error) || "Akun gagal dibuat.", "error");
+          return;
+        }
+        form.reset();
+        setAdminNotice(`Akun ${username} dibuat. Password sementara: ${data.temporaryPassword} — bagikan secara pribadi; wajib diganti saat login.`);
+        await loadAdminUsers();
+      });
+      document.querySelectorAll("[data-admin-reset]").forEach((button) => button.addEventListener("click", () => administerUser("reset", button.dataset.adminReset)));
+      document.querySelectorAll("[data-admin-toggle]").forEach((button) => button.addEventListener("click", () => administerUser("toggle", button.dataset.adminToggle, button.dataset.disabled !== "true")));
       document.getElementById("import-button")?.addEventListener("click", () => document.getElementById("workbook-input").click());
       document.getElementById("delete-master-button")?.addEventListener("click", () => document.getElementById("delete-master-dialog").showModal());
       document.getElementById("export-button")?.addEventListener("click", exportCsv);
@@ -1745,7 +1827,12 @@
       const label = item.querySelector("span:last-child").textContent.trim();
       item.setAttribute("aria-label", label);
       item.title = label;
-      item.addEventListener("click", () => { currentPage = item.dataset.page; searchTerm = ""; render(); });
+      item.addEventListener("click", () => {
+        currentPage = item.dataset.page;
+        searchTerm = "";
+        render();
+        if (currentPage === "admin-users") loadAdminUsers();
+      });
     });
     document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", signOut));
     document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));

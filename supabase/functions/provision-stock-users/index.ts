@@ -71,6 +71,47 @@ Deno.serve(async (request: Request) => {
   }
 
   const temporaryPassword = makeTemporaryPassword();
+  if (input.action === "promote-owner") {
+    const { data: mapping, error: mappingError } = await adminClient
+      .from("stock_opname_usernames")
+      .select("email")
+      .eq("username", "indra")
+      .maybeSingle();
+    if (mappingError || !mapping) {
+      if (mappingError) console.error("Owner username lookup failed:", mappingError.message);
+      return jsonResponse(404, { error: "Akun indra tidak ditemukan." }, responseOrigin);
+    }
+
+    let owner = null;
+    for (let page = 1; !owner; page++) {
+      const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) {
+        console.error("Owner auth user lookup failed:", error.message);
+        return jsonResponse(503, { error: "Akun indra tidak dapat diperiksa." }, responseOrigin);
+      }
+      owner = data.users.find((user) => user.email === mapping.email) || null;
+      if (owner || data.users.length < 1000) break;
+    }
+    if (!owner) return jsonResponse(404, { error: "Akun autentikasi indra tidak ditemukan." }, responseOrigin);
+
+    const { error } = await adminClient.auth.admin.updateUserById(owner.id, {
+      app_metadata: {
+        ...owner.app_metadata,
+        role: "super_admin",
+        owner_username: "indra",
+      },
+    });
+    if (error) {
+      console.error("Owner promotion failed:", error.message);
+      return jsonResponse(500, { error: "Peran super admin gagal diberikan." }, responseOrigin);
+    }
+    return jsonResponse(200, {
+      username: "indra",
+      role: "super_admin",
+      message: "Indra sekarang menjadi super admin workspace.",
+    }, responseOrigin);
+  }
+
   if (input.action === "reset-all-passwords") {
     if (
       typeof input.temporaryPassword !== "string" ||
