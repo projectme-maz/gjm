@@ -458,10 +458,136 @@
       .about-guide-grid { grid-template-columns: minmax(0, 1fr); }
       .about-intro { border-radius: 12px; }
     }
+    .theme-toggle { align-items: center; background: rgba(255,255,255,.76); border: 1px solid var(--line); border-radius: 7px; color: var(--ink); display: inline-flex; flex: 0 0 auto; font-size: 10px; font-weight: 700; gap: 5px; justify-content: center; min-height: 29px; padding: 4px 8px; transition: background .2s ease, border-color .2s ease, color .2s ease; }
+    .theme-toggle:hover { background: #fff; border-color: #b8cfc6; }
+    .theme-toggle-icon { font-size: 13px; line-height: 1; }
+    .auth-theme-toggle { position: absolute; right: 20px; top: 18px; }
+    @media (max-width: 650px) {
+      .theme-toggle { min-height: 27px; padding: 4px 7px; }
+      .theme-toggle-label { display: none; }
+      .auth-theme-toggle { right: 12px; top: 12px; }
+      .top-account { gap: 6px; }
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #e5efed;
+      --muted: #a5b7b3;
+      --line: #344744;
+      --canvas: #111b1a;
+      --paper: #1a2826;
+      --green: #82cbb2;
+      --green-dark: #a0dfc9;
+      --green-soft: #203b35;
+      --lime: #a4d8c3;
+      --amber: #e2b86b;
+      --amber-soft: #403522;
+      --red: #e59b93;
+      --red-soft: #402a29;
+      --shadow: 0 14px 38px rgba(0, 0, 0, .28);
+    }
+    html[data-theme="dark"] body { background: radial-gradient(ellipse at 88% 0%, rgba(39, 91, 78, .2), transparent 36%), var(--canvas); }
+    html[data-theme="dark"] .auth-card,
+    html[data-theme="dark"] .metric,
+    html[data-theme="dark"] .dashboard-metric,
+    html[data-theme="dark"] .dashboard-panel,
+    html[data-theme="dark"] .layout-card,
+    html[data-theme="dark"] .table-section,
+    html[data-theme="dark"] .progress-panel,
+    html[data-theme="dark"] .history-summary,
+    html[data-theme="dark"] .completed-detail-panel,
+    html[data-theme="dark"] .completed-rack,
+    html[data-theme="dark"] .about-guide-card { background: var(--paper); border-color: var(--line); color: var(--ink); }
+    html[data-theme="dark"] .auth-screen { background: radial-gradient(ellipse at 82% 10%, rgba(39,91,78,.22), transparent 36%), var(--canvas); }
+    html[data-theme="dark"] .auth-card { box-shadow: 0 22px 70px rgba(0,0,0,.36); }
+    html[data-theme="dark"] .auth-field label,
+    html[data-theme="dark"] .form-field label,
+    html[data-theme="dark"] .crumb b,
+    html[data-theme="dark"] .today,
+    html[data-theme="dark"] .activity-details,
+    html[data-theme="dark"] .activity-time,
+    html[data-theme="dark"] .scan-log,
+    html[data-theme="dark"] .layout-last-scan,
+    html[data-theme="dark"] .number-cell { color: var(--muted); }
+    html[data-theme="dark"] .auth-input,
+    html[data-theme="dark"] .scan-input,
+    html[data-theme="dark"] .search-input,
+    html[data-theme="dark"] .select-input,
+    html[data-theme="dark"] .count-input,
+    html[data-theme="dark"] .qty-input,
+    html[data-theme="dark"] .note-input,
+    html[data-theme="dark"] .workspace-name-input,
+    html[data-theme="dark"] .form-control { background: #14211f; border-color: #3a514b; color: var(--ink); }
+    html[data-theme="dark"] .auth-input:focus,
+    html[data-theme="dark"] .scan-input:focus,
+    html[data-theme="dark"] .search-input:focus,
+    html[data-theme="dark"] .select-input:focus,
+    html[data-theme="dark"] .count-input:focus,
+    html[data-theme="dark"] .qty-input:focus,
+    html[data-theme="dark"] .note-input:focus,
+    html[data-theme="dark"] .form-control:focus { background: #192a27; border-color: #70b39b; }
+    html[data-theme="dark"] .table-toolbar { background: linear-gradient(100deg, #1a2826, #1d302c); border-color: var(--line); }
+    html[data-theme="dark"] th { background: #22332f; color: #a8bcb6; }
+    html[data-theme="dark"] td,
+    html[data-theme="dark"] .dashboard-panel-head,
+    html[data-theme="dark"] .layout-card-head,
+    html[data-theme="dark"] .layout-card-foot,
+    html[data-theme="dark"] .layout-scan-row,
+    html[data-theme="dark"] .completed-rack-scan { border-color: #304440; }
+    html[data-theme="dark"] tbody tr:hover { background: #21332f; }
+    html[data-theme="dark"] .workspace-row.current { background: #1d322d; }
+    html[data-theme="dark"] .non-laptop-row td { background: #302b1f; }
+    html[data-theme="dark"] .non-laptop-row:hover td { background: #3a3322; }
+    html[data-theme="dark"] .row-status.pending { background: #303b38; color: #bac6c2; }
+    html[data-theme="dark"] .row-status.non-laptop { background: #4a3d24; color: #f0d48e; }
+    html[data-theme="dark"] .category-chip,
+    html[data-theme="dark"] .activity-type,
+    html[data-theme="dark"] .dashboard-chart-tag { background: #203a34; border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .product-thumb,
+    html[data-theme="dark"] .metric-mark,
+    html[data-theme="dark"] .dashboard-metric-icon,
+    html[data-theme="dark"] .about-guide-icon { background: #233c36; color: #a8ddc9; }
+    html[data-theme="dark"] .serial-token { background: #263532; color: #d4e2de; }
+    html[data-theme="dark"] .dashboard-donut-track,
+    html[data-theme="dark"] .dashboard-bar-track,
+    html[data-theme="dark"] .progress-track { background: #2d403b; stroke: #2d403b; }
+    html[data-theme="dark"] .dashboard-legend-dot.remaining { background: #445650; }
+    html[data-theme="dark"] .layout-card.quantity-matched { background: linear-gradient(145deg, #1d3932, #203d35); border-color: #3e705d; }
+    html[data-theme="dark"] .layout-card.quantity-matched::before,
+    html[data-theme="dark"] .layout-complete-check { border-color: var(--paper); }
+    html[data-theme="dark"] .layout-card:focus-within .layout-card-head { background: #203b35; }
+    html[data-theme="dark"] .top-logout,
+    html[data-theme="dark"] .button-secondary { background: #22332f; border-color: #3a514b; color: #dce8e4; }
+    html[data-theme="dark"] .top-logout:hover,
+    html[data-theme="dark"] .button-secondary:hover { background: #2a403a; border-color: #527467; }
+    html[data-theme="dark"] .button-danger { background: #402a29; border-color: #67403c; color: #f0aaa1; }
+    html[data-theme="dark"] .button-danger:hover { background: #523532; }
+    html[data-theme="dark"] .session-actions .button { background: #b7dfcd; color: #173d33; }
+    html[data-theme="dark"] .session-actions .button:hover { background: #d0edde; }
+    html[data-theme="dark"] .dialog-head { border-color: var(--line); }
+    html[data-theme="dark"] dialog { background: var(--paper); color: var(--ink); }
+    html[data-theme="dark"] .dialog-actions { background: #162320; border-color: var(--line); }
+    html[data-theme="dark"] .confirm-body { color: var(--muted); }
+    html[data-theme="dark"] .developer-watermark { background: rgba(22,36,33,.58); border-color: rgba(169,201,189,.1); color: rgba(191,211,203,.4); }
+    html[data-theme="dark"] .theme-toggle { background: #22332f; border-color: #3a514b; color: #e3eeea; }
+    html[data-theme="dark"] .theme-toggle:hover { background: #2a403a; border-color: #527467; }
+    html[data-theme="dark"] .nav-item.active { background: linear-gradient(100deg, #28483e, #203a34); box-shadow: inset 3px 0 #83c6ae; color: #e1f1eb; }
+    html[data-theme="dark"] .auth-message.success { background: #203b35; border-color: #36594d; color: #9edbc3; }
+    html[data-theme="dark"] .auth-message:not(.success) { background: #402a29; border-color: #67403c; color: #efaaa1; }
+    html[data-theme="dark"] .dashboard-panel-head { background: #1b2b28; }
+    html[data-theme="dark"] .table-footer { border-color: var(--line); }
+    html[data-theme="dark"] .dashboard-progress-line strong { color: #9cdbc3; }
+    html[data-theme="dark"] .search-input::placeholder,
+    html[data-theme="dark"] .select-input::placeholder,
+    html[data-theme="dark"] .scan-input::placeholder,
+    html[data-theme="dark"] input::placeholder { color: #80938e; opacity: 1; }
+    html[data-theme="dark"] .activity-type { border: 1px solid #31574b; }
+    html[data-theme="dark"] .form-control option,
+    html[data-theme="dark"] .select-input option { background: #1a2826; color: var(--ink); }
   </style>
 </head>
 <body class="auth-locked">
   <section class="auth-screen" id="auth-screen" aria-label="Login">
+    <button class="theme-toggle auth-theme-toggle" type="button" data-theme-toggle aria-label="Aktifkan dark mode" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-label">Dark</span></button>
     <div class="auth-card">
       <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div><span class="auth-copyright">© M-Maz</span></div>
       <h1>Login Account</h1>
@@ -540,6 +666,30 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const STORAGE_KEY = "ruangstok-sn-v2";
+    const THEME_STORAGE_KEY = "ruangstok-theme";
+    const applyTheme = (theme, persist = false) => {
+      const activeTheme = theme === "dark" ? "dark" : "light";
+      document.documentElement.dataset.theme = activeTheme;
+      document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+        const dark = activeTheme === "dark";
+        button.setAttribute("aria-pressed", String(dark));
+        button.setAttribute("aria-label", dark ? "Aktifkan mode terang" : "Aktifkan dark mode");
+        button.innerHTML = `<span class="theme-toggle-icon" aria-hidden="true">${dark ? "☀" : "☾"}</span><span class="theme-toggle-label">${dark ? "Light" : "Dark"}</span>`;
+      });
+      if (persist) {
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, activeTheme);
+        } catch (error) {
+          console.warn("Preferensi tema tidak dapat disimpan:", error);
+        }
+      }
+    };
+    try {
+      applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || "light");
+    } catch (error) {
+      console.warn("Preferensi tema tidak dapat dibaca:", error);
+      applyTheme("light");
+    }
     const SUPABASE_URL = "https://kdeculjdbmhhhnqaonzb.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_w2fpQZE11m9h00HAXNNFTA_5L7i_Jlf";
     const SHARED_STATE_ROW_ID = "stock-opname-team";
@@ -1033,7 +1183,7 @@
       const pics = activeWorkspace()?.picNames || [];
       const showPics = currentPage === "opname" || currentPage === "layouts" || currentPage === "products";
       const picMarkup = showPics && pics.some((name) => name.trim()) ? `<span class="top-pics">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</span>` : "";
-      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : currentPage === "admin-users" ? "Kelola Akun" : currentPage === "about" ? "About" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.user_metadata?.username || authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
+      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : currentPage === "admin-users" ? "Kelola Akun" : currentPage === "about" ? "About" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.user_metadata?.username || authSession?.user?.email || "")}</span><button class="theme-toggle" type="button" data-theme-toggle aria-label="Aktifkan dark mode" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-label">Dark</span></button><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
     };
     const productRows = (products) => products.length ? products.map((product, index) => {
       const laptop = isLaptopProduct(product);
@@ -2099,6 +2249,10 @@
       });
     });
     document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", signOut));
+    document.addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-theme-toggle]");
+      if (toggle) applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
+    });
     document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
     document.getElementById("confirm-finish").addEventListener("click", finishSession);
     document.getElementById("confirm-delete-master").addEventListener("click", deleteAllMasterData);
