@@ -73,6 +73,7 @@
     .auth-brand .brand-name { color: var(--ink); font-size: 16px; }
     .auth-brand .brand-caption { color: var(--muted); }
     .auth-copyright { color: #929a91; font-size: 11px; font-weight: 600; margin-left: auto; white-space: nowrap; }
+    body.auth-locked .developer-watermark { display: none; }
     .auth-card h1 { font-size: 25px; }
     .auth-description { color: var(--muted); font-size: 12px; margin: 8px 0 22px; }
     .auth-form { display: grid; gap: 13px; }
@@ -108,6 +109,7 @@
     }
     main { min-width: 0; padding: 32px clamp(20px, 4vw, 58px) 52px; }
     .topline { align-items: center; display: flex; justify-content: space-between; margin-bottom: 31px; }
+    .developer-watermark { background: rgba(255,255,255,.82); border: 1px solid rgba(111,125,114,.16); border-radius: 999px; color: #747d74; font-size: 10px; font-weight: 600; line-height: 1.4; padding: 4px 9px; pointer-events: none; position: fixed; right: 14px; top: 8px; user-select: none; z-index: 10; }
     .crumb { color: var(--muted); font-size: 12px; }
     .crumb b { color: #434a40; font-weight: 600; }
     .top-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 2px; }
@@ -452,6 +454,7 @@
     </aside>
     <main id="main-content"></main>
   </div>
+  <div class="developer-watermark" aria-hidden="true">Developer by M-Maz</div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="upload-input" id="workbook-input" type="file" accept=".xlsx,.xls" aria-label="Pilih workbook stock opname">
   <dialog id="finish-dialog">
