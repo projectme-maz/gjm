@@ -401,7 +401,7 @@
   <section class="auth-screen" id="auth-screen" aria-label="Login">
     <div class="auth-card">
       <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div></div>
-      <h1>Masuk ke workspace</h1>
+      <h1>Login Account</h1>
       <p class="auth-description">Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.</p>
       <form class="auth-form" id="login-form">
         <div class="auth-field"><label for="login-email">Email</label><input class="auth-input" id="login-email" name="email" type="email" autocomplete="username" required placeholder="nama@perusahaan.com"></div>
@@ -1715,7 +1715,7 @@
         lockApp();
         document.getElementById("login-form").hidden = false;
         document.getElementById("password-setup-form").hidden = true;
-        document.querySelector(".auth-card h1").textContent = "Masuk ke workspace";
+        document.querySelector(".auth-card h1").textContent = "Login Account";
         document.querySelector(".auth-description").textContent = "Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.";
         showAuthMessage("");
       }
