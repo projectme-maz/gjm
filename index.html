@@ -50,9 +50,41 @@
     .nav-icon { align-items: center; color: inherit; display: inline-flex; font-size: 16px; justify-content: center; width: 18px; }
     .sidebar-bottom { border-top: 1px solid rgba(255,255,255,.2); margin-top: auto; padding: 17px 9px 0; }
     .profile { align-items: center; display: flex; gap: 10px; }
+    .profile-details { min-width: 0; }
     .avatar { align-items: center; background: #f0e8d9; border-radius: 50%; color: #76562e; display: flex; font-size: 11px; font-weight: 700; height: 33px; justify-content: center; width: 33px; }
     .profile-name { font-size: 12px; font-weight: 700; }
     .profile-role { color: #c3d7c5; font-size: 11px; margin-top: 1px; }
+    .profile-email { color: #c3d7c5; font-size: 10px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .logout-button { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.17); border-radius: 7px; color: #f4f8f2; font-size: 10px; margin-left: auto; padding: 6px 8px; }
+    .logout-button:hover { background: rgba(255,255,255,.18); }
+    .top-account { align-items: center; display: flex; gap: 9px; }
+    .top-account-email { color: var(--muted); font-size: 10px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-logout { background: #fff; border: 1px solid var(--line); border-radius: 6px; color: #4b574c; font-size: 10px; padding: 5px 8px; }
+    .top-logout:hover { background: #f2f7f1; border-color: #cbd9ca; }
+    .auth-screen { align-items: center; background: radial-gradient(ellipse at 82% 10%, rgba(218,237,216,.5), transparent 35%), var(--canvas); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 20; }
+    .auth-card { animation: dashboard-enter .28s ease both; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 22px 70px rgba(29,53,36,.13); max-width: 420px; padding: 32px; width: 100%; }
+    .auth-brand { align-items: center; display: flex; gap: 12px; margin-bottom: 25px; }
+    .auth-brand .brand-mark { flex: 0 0 44px; height: 44px; width: 44px; }
+    .auth-brand .brand-name { color: var(--ink); font-size: 16px; }
+    .auth-brand .brand-caption { color: var(--muted); }
+    .auth-card h1 { font-size: 25px; }
+    .auth-description { color: var(--muted); font-size: 12px; margin: 8px 0 22px; }
+    .auth-form { display: grid; gap: 13px; }
+    .auth-form[hidden] { display: none; }
+    .auth-field { display: grid; gap: 6px; }
+    .auth-field label { color: #455247; font-size: 11px; font-weight: 700; }
+    .auth-input { background: #fbfcf9; border: 1px solid #dce4da; border-radius: 8px; color: var(--ink); height: 42px; outline: 0; padding: 0 12px; width: 100%; }
+    .auth-input:focus { background: #fff; border-color: #739b7c; box-shadow: 0 0 0 3px rgba(40,93,69,.1); }
+    .auth-submit { background: linear-gradient(135deg, #31744b, var(--green)); border: 0; border-radius: 8px; color: #fff; font-size: 12px; font-weight: 700; height: 42px; margin-top: 4px; }
+    .auth-submit:hover { background: var(--green-dark); }
+    .auth-submit:disabled { cursor: wait; opacity: .65; }
+    .auth-message { background: var(--red-soft); border: 1px solid #efd2cc; border-radius: 8px; color: var(--red); display: none; font-size: 11px; margin-top: 13px; padding: 10px 12px; }
+    .auth-message.visible { display: block; }
+    .auth-message.success { background: var(--green-soft); border-color: #cde2cd; color: var(--green); }
+    .auth-help { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 17px 0 0; }
+    .auth-forgot { background: none; border: 0; color: var(--green); font-size: 10px; justify-self: end; padding: 0; text-decoration: underline; }
+    body.auth-locked .app-shell, body.auth-locked .toast, body.auth-locked > dialog { display: none; }
+    body:not(.auth-locked) .auth-screen { display: none; }
     @media (min-width: 651px) {
       .app-shell.sidebar-collapsed:not(.sidebar-expanded) .sidebar { align-items: center; padding-left: 10px; padding-right: 10px; }
       .app-shell.sidebar-collapsed:not(.sidebar-expanded) .brand { flex-wrap: wrap; justify-content: center; padding: 0; }
@@ -343,6 +375,7 @@
       main { padding: 20px 14px 30px; }
       .topline { margin-bottom: 22px; }
       .today { display: none; }
+      .top-account-email { max-width: 145px; }
       .page-head { align-items: flex-start; flex-direction: column; gap: 15px; margin-bottom: 17px; }
       h1 { font-size: 27px; }
       .head-buttons { width: 100%; }
@@ -364,7 +397,27 @@
     }
   </style>
 </head>
-<body>
+<body class="auth-locked">
+  <section class="auth-screen" id="auth-screen" aria-label="Login">
+    <div class="auth-card">
+      <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div></div>
+      <h1>Masuk ke workspace</h1>
+      <p class="auth-description">Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.</p>
+      <form class="auth-form" id="login-form">
+        <div class="auth-field"><label for="login-email">Email</label><input class="auth-input" id="login-email" name="email" type="email" autocomplete="username" required placeholder="nama@perusahaan.com"></div>
+        <div class="auth-field"><label for="login-password">Password</label><input class="auth-input" id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="Masukkan password"></div>
+        <button class="auth-forgot" id="forgot-password" type="button">Lupa password? / Atur password undangan</button>
+        <button class="auth-submit" id="login-submit" type="submit">Masuk</button>
+      </form>
+      <form class="auth-form" id="password-setup-form" hidden>
+        <div class="auth-field"><label for="new-password">Password baru</label><input class="auth-input" id="new-password" name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Minimal 8 karakter"></div>
+        <div class="auth-field"><label for="confirm-password">Ulangi password baru</label><input class="auth-input" id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="Ulangi password"></div>
+        <button class="auth-submit" id="password-setup-submit" type="submit">Simpan password</button>
+      </form>
+      <div class="auth-message" id="auth-message" role="alert"></div>
+      <p class="auth-help">Belum punya akun? Minta admin mengundang email Anda melalui Supabase. Pendaftaran umum dinonaktifkan.</p>
+    </div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -387,7 +440,7 @@
         <button class="nav-item" data-page="completed-sessions"><span class="nav-icon">▣</span><span>Sesi Stock Opname</span></button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="profile"><div class="avatar">AD</div><div><div class="profile-name">Admin Gudang</div><div class="profile-role">Gudang utama</div></div></div>
+        <div class="profile"><div class="avatar" id="profile-avatar">AD</div><div class="profile-details"><div class="profile-name">Tim Gudang</div><div class="profile-email" id="profile-email"></div></div><button class="logout-button" id="logout-button" type="button">Keluar</button></div>
       </div>
     </aside>
     <main id="main-content"></main>
@@ -410,8 +463,14 @@
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-completed-session-dialog">Batal</button><button class="button button-danger" id="confirm-delete-completed-session" type="button">Hapus sesi</button></div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const STORAGE_KEY = "ruangstok-sn-v2";
+    const SUPABASE_URL = "https://kdeculjdbmhhhnqaonzb.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_w2fpQZE11m9h00HAXNNFTA_5L7i_Jlf";
+    const SHARED_STATE_ROW_ID = "stock-opname-team";
+    const SHARED_STATE_TABLE = "stock_opname_state";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const makeSession = () => ({ id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active" });
     const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
     const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
@@ -452,6 +511,14 @@
     let pendingCompletedSessionDeletionId = "";
     let searchTerm = "";
     let toastTimer;
+    let authSession = null;
+    let sharedStateReady = false;
+    let remoteUpdatedAt = "";
+    let lastSyncedState = "";
+    let syncTimer = null;
+    let refreshTimer = null;
+    let refreshInProgress = false;
+    let syncErrorShown = false;
 
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
     const rackLabel = (layout) => state.layoutNumbers[layout] ? `Rack ${state.layoutNumbers[layout]}` : "Rack";
@@ -489,11 +556,17 @@
         if (previous !== undefined && previous !== current) recordActivity(type, describeChange(previous, current));
       });
     }
-    const persist = () => {
+    function persistLocalState() {
       const workspace = activeWorkspace();
       if (workspace) workspace.data = snapshotWorkspaceData(state);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
       catch { notify("Penyimpanan browser penuh. Ekspor hasil agar data tetap aman."); }
+    }
+    const persist = () => {
+      persistLocalState();
+      if (!authSession || !sharedStateReady) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(saveSharedState, 700);
     };
     const notify = (message) => {
       const toast = document.getElementById("toast");
@@ -502,6 +575,243 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove("visible"), 2300);
     };
+    function showAuthMessage(message) {
+      const target = document.getElementById("auth-message");
+      target.textContent = message;
+      target.classList.toggle("visible", Boolean(message));
+      target.classList.remove("success");
+    }
+    function stableSerialize(value) {
+      return JSON.stringify(value, (key, item) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+        return Object.keys(item).sort().reduce((sorted, itemKey) => {
+          sorted[itemKey] = item[itemKey];
+          return sorted;
+        }, {});
+      });
+    }
+    function setLoginBusy(busy) {
+      const button = document.getElementById("login-submit");
+      button.disabled = busy;
+      button.textContent = busy ? "Memeriksa akun..." : "Masuk";
+    }
+    function showPasswordSetup(session) {
+      authSession = session;
+      document.getElementById("login-form").hidden = true;
+      document.getElementById("password-setup-form").hidden = false;
+      document.querySelector(".auth-card h1").textContent = "Atur password akun";
+      document.querySelector(".auth-description").textContent = "Buat password baru untuk melanjutkan ke workspace stock opname.";
+      showAuthMessage("");
+    }
+    function normalizeSharedState(source) {
+      if (!source || typeof source !== "object" || !Array.isArray(source.products) || !source.activeSession) {
+        throw new Error("Format data workspace di database tidak valid.");
+      }
+      const normalized = { ...initialState(), ...source };
+      if (!Array.isArray(normalized.layouts) || !normalized.layouts.length) normalized.layouts = [...DEFAULT_LAYOUTS];
+      if (!normalized.layoutQuantities || typeof normalized.layoutQuantities !== "object") normalized.layoutQuantities = {};
+      if (!normalized.layoutNumbers || typeof normalized.layoutNumbers !== "object") normalized.layoutNumbers = {};
+      if (!Array.isArray(normalized.scanEvents)) normalized.scanEvents = [];
+      if (!Array.isArray(normalized.historyEvents)) normalized.historyEvents = [];
+      if (!Array.isArray(normalized.sessions)) normalized.sessions = [];
+      for (const event of normalized.scanEvents) if (!event.id) event.id = crypto.randomUUID();
+      if (!Array.isArray(normalized.workspaces) || !normalized.workspaces.length) {
+        const first = createWorkspace(1, snapshotWorkspaceData(normalized));
+        normalized.workspaces = [first, ...Array.from({ length: 4 }, (_, index) => createWorkspace(index + 2))];
+        normalized.currentWorkspaceId = first.id;
+      } else {
+        normalized.workspaces = normalized.workspaces.slice(0, 5);
+        while (normalized.workspaces.length < 5) normalized.workspaces.push(createWorkspace(normalized.workspaces.length + 1));
+        normalized.workspaces.forEach((workspace, index) => {
+          if (!workspace.id) workspace.id = crypto.randomUUID();
+          if (typeof workspace.name !== "string") workspace.name = `Sesi ${index + 1}`;
+          workspace.data = snapshotWorkspaceData(workspace.data || emptyWorkspaceData());
+          if (!Array.isArray(workspace.picNames)) workspace.picNames = ["", ""];
+          workspace.picNames = [workspace.picNames[0] || "", workspace.picNames[1] || ""];
+        });
+        if (!normalized.workspaces.some((workspace) => workspace.id === normalized.currentWorkspaceId)) normalized.currentWorkspaceId = normalized.workspaces[0].id;
+        Object.assign(normalized, snapshotWorkspaceData(normalized.workspaces.find((workspace) => workspace.id === normalized.currentWorkspaceId).data));
+      }
+      if (!normalized.activeSession || typeof normalized.activeSession !== "object") normalized.activeSession = makeSession();
+      return normalized;
+    }
+    function lockApp() {
+      authSession = null;
+      sharedStateReady = false;
+      clearTimeout(syncTimer);
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+      document.body.classList.add("auth-locked");
+      document.getElementById("profile-email").textContent = "";
+      document.querySelectorAll(".top-account").forEach((element) => element.remove());
+    }
+    function unlockApp(session) {
+      authSession = session;
+      document.body.classList.remove("auth-locked");
+      const email = session.user.email || "Pengguna";
+      document.getElementById("profile-email").textContent = email;
+      document.getElementById("profile-avatar").textContent = email.slice(0, 2).toLocaleUpperCase("id-ID");
+    }
+    function databaseSetupHint(error) {
+      const message = `${error.message || ""} ${error.details || ""}`;
+      if (error.code === "PGRST205" || error.code === "42P01" || /stock_opname_state.*(not found|does not exist)|schema cache/i.test(message)) {
+        return "Tabel database belum dibuat. Jalankan file supabase-setup.sql di Supabase → SQL Editor, lalu login kembali.";
+      }
+      if (error.code === "42501" || /row-level security|permission denied/i.test(message)) {
+        return "Akses database ditolak. Pastikan supabase-setup.sql sudah dijalankan dan akun Anda sudah diundang.";
+      }
+      return `Gagal menyambungkan data bersama: ${error.message || "kesalahan tidak diketahui"}`;
+    }
+    async function readSharedState() {
+      return supabaseClient.from(SHARED_STATE_TABLE).select("data, updated_at").eq("id", SHARED_STATE_ROW_ID).maybeSingle();
+    }
+    async function startAuthenticatedSession(session) {
+      if (!session?.user) return;
+      setLoginBusy(true);
+      showAuthMessage("");
+      authSession = session;
+      try {
+        const { data: row, error } = await readSharedState();
+        if (error) throw error;
+        if (row) {
+          state = normalizeSharedState(row.data);
+          remoteUpdatedAt = row.updated_at;
+        } else {
+          state = normalizeSharedState(state);
+          persistLocalState();
+          const { data: created, error: createError } = await supabaseClient.from(SHARED_STATE_TABLE)
+            .upsert({ id: SHARED_STATE_ROW_ID, data: state, updated_by: session.user.id }, { onConflict: "id" })
+            .select("data, updated_at").single();
+          if (createError) throw createError;
+          state = normalizeSharedState(created.data);
+          remoteUpdatedAt = created.updated_at;
+        }
+        normalizeWorkspaceClassifications();
+        persistLocalState();
+        lastSyncedState = stableSerialize(state);
+        sharedStateReady = true;
+        syncErrorShown = false;
+        unlockApp(session);
+        render();
+        refreshTimer = setInterval(refreshSharedState, 8000);
+      } catch (error) {
+        showAuthMessage(databaseSetupHint(error));
+        document.body.classList.add("auth-locked");
+      } finally {
+        setLoginBusy(false);
+      }
+    }
+    async function saveSharedState() {
+      if (!authSession || !sharedStateReady) return;
+      persistLocalState();
+      const serializedState = stableSerialize(state);
+      try {
+        const { data, error } = await supabaseClient.from(SHARED_STATE_TABLE)
+          .upsert({ id: SHARED_STATE_ROW_ID, data: JSON.parse(serializedState), updated_by: authSession.user.id }, { onConflict: "id" })
+          .select("updated_at").single();
+        if (error) throw error;
+        remoteUpdatedAt = data.updated_at;
+        lastSyncedState = serializedState;
+        syncErrorShown = false;
+        if (stableSerialize(state) !== serializedState) {
+          clearTimeout(syncTimer);
+          syncTimer = setTimeout(saveSharedState, 100);
+        }
+      } catch (error) {
+        if (!syncErrorShown) notify(databaseSetupHint(error));
+        syncErrorShown = true;
+      }
+    }
+    async function refreshSharedState() {
+      if (!authSession || !sharedStateReady || refreshInProgress || syncTimer) return;
+      refreshInProgress = true;
+      try {
+        const { data: row, error } = await readSharedState();
+        if (error) throw error;
+        if (!row) throw new Error("Data workspace bersama tidak ditemukan.");
+        syncErrorShown = false;
+        if (row.updated_at !== remoteUpdatedAt && stableSerialize(row.data) !== lastSyncedState) {
+          state = normalizeSharedState(row.data);
+          remoteUpdatedAt = row.updated_at;
+          lastSyncedState = stableSerialize(state);
+          persistLocalState();
+          render();
+          notify("Data workspace diperbarui oleh anggota tim.");
+        } else remoteUpdatedAt = row.updated_at;
+      } catch (error) {
+        if (!syncErrorShown) notify(databaseSetupHint(error));
+        syncErrorShown = true;
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+    async function signIn(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      setLoginBusy(true);
+      showAuthMessage("");
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: form.elements.email.value.trim(),
+          password: form.elements.password.value
+        });
+        if (error) throw error;
+        await startAuthenticatedSession(data.session);
+      } catch (error) {
+        showAuthMessage(error.message || "Login gagal. Periksa email dan password.");
+      } finally {
+        setLoginBusy(false);
+      }
+    }
+    async function sendPasswordReset() {
+      const email = document.getElementById("login-email").value.trim();
+      if (!email) {
+        showAuthMessage("Masukkan alamat email akun Anda terlebih dahulu.");
+        document.getElementById("login-email").focus();
+        return;
+      }
+      const button = document.getElementById("forgot-password");
+      button.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
+        if (error) throw error;
+        const message = document.getElementById("auth-message");
+        showAuthMessage("Jika email tersebut terdaftar, tautan untuk mengatur password telah dikirim.");
+        message.classList.add("success");
+      } catch (error) {
+        showAuthMessage(error.message || "Tautan pengaturan password gagal dikirim.");
+      } finally {
+        button.disabled = false;
+      }
+    }
+    async function saveNewPassword(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const password = form.elements.password.value;
+      if (password !== form.elements.confirmPassword.value) {
+        showAuthMessage("Password dan konfirmasi password tidak sama.");
+        return;
+      }
+      const button = document.getElementById("password-setup-submit");
+      button.disabled = true;
+      button.textContent = "Menyimpan...";
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password });
+        if (error) throw error;
+        history.replaceState(null, "", location.pathname);
+        document.getElementById("password-setup-form").reset();
+        await startAuthenticatedSession(authSession);
+      } catch (error) {
+        showAuthMessage(error.message || "Password baru gagal disimpan.");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Simpan password";
+      }
+    }
+    async function signOut() {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) notify(`Gagal keluar: ${error.message}`);
+    }
     const normalizeField = (value) => String(value ?? "").toLocaleLowerCase("id-ID").replace(/[^a-z0-9]/g, "");
     const isLaptopProduct = (product) => {
       const group = normalizeField(product.itemGroup || "");
@@ -543,7 +853,7 @@
       const pics = activeWorkspace()?.picNames || [];
       const showPics = currentPage === "opname" || currentPage === "layouts" || currentPage === "products";
       const picMarkup = showPics && pics.some((name) => name.trim()) ? `<span class="top-pics">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</span>` : "";
-      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}</div></div>`;
+      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
     };
     const productRows = (products) => products.length ? products.map((product, index) => {
       const laptop = isLaptopProduct(product);
@@ -1389,13 +1699,37 @@
       item.title = label;
       item.addEventListener("click", () => { currentPage = item.dataset.page; searchTerm = ""; render(); });
     });
+    document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", signOut));
     document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
     document.getElementById("confirm-finish").addEventListener("click", finishSession);
     document.getElementById("confirm-delete-master").addEventListener("click", deleteAllMasterData);
     document.getElementById("confirm-delete-completed-session").addEventListener("click", deleteCompletedSession);
-    normalizeWorkspaceClassifications();
-    render();
-    persist();
+    document.getElementById("login-form").addEventListener("submit", signIn);
+    document.getElementById("password-setup-form").addEventListener("submit", saveNewPassword);
+    document.getElementById("forgot-password").addEventListener("click", sendPasswordReset);
+    document.getElementById("logout-button").addEventListener("click", signOut);
+    const isPasswordSetupLink = () => /(?:[?&#]type=(?:invite|recovery)|[?&]code=)/i.test(`${location.search}${location.hash}`);
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isPasswordSetupLink()))) showPasswordSetup(session);
+      if (event === "SIGNED_OUT") {
+        lockApp();
+        document.getElementById("login-form").hidden = false;
+        document.getElementById("password-setup-form").hidden = true;
+        document.querySelector(".auth-card h1").textContent = "Masuk ke workspace";
+        document.querySelector(".auth-description").textContent = "Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.";
+        showAuthMessage("");
+      }
+    });
+    supabaseClient.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        showAuthMessage(`Gagal memeriksa sesi login: ${error.message}`);
+        return;
+      }
+      if (data.session) {
+        if (isPasswordSetupLink()) showPasswordSetup(data.session);
+        else startAuthenticatedSession(data.session);
+      }
+    }).catch((error) => showAuthMessage(`Gagal menghubungi layanan login: ${error.message}`));
   </script>
 </body>
 </html>
