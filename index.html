@@ -504,7 +504,7 @@
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-master-dialog">Batal</button><button class="button button-danger" id="confirm-delete-master" type="button">Hapus semua data</button></div>
   </dialog>
   <dialog id="delete-completed-session-dialog">
-    <div class="dialog-head"><div><div class="dialog-title">Hapus sesi stock opname?</div><div class="dialog-subtitle">Arsip sesi dan detail Scan Layout serta Result SO akan dihapus permanen.</div></div><button class="dialog-close" type="button" data-close="delete-completed-session-dialog" aria-label="Tutup">×</button></div>
+    <div class="dialog-head"><div><div class="dialog-title">Hapus sesi stock opname?</div><div class="dialog-subtitle">Arsip sesi, file XLSX sumber, dan detail Scan Layout serta Result SO akan dihapus permanen.</div></div><button class="dialog-close" type="button" data-close="delete-completed-session-dialog" aria-label="Tutup">×</button></div>
     <div class="confirm-body" id="delete-completed-session-message"></div>
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-completed-session-dialog">Batal</button><button class="button button-danger" id="confirm-delete-completed-session" type="button">Hapus sesi</button></div>
   </dialog>
@@ -521,12 +521,13 @@
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_w2fpQZE11m9h00HAXNNFTA_5L7i_Jlf";
     const SHARED_STATE_ROW_ID = "stock-opname-team";
     const SHARED_STATE_TABLE = "stock_opname_state";
+    const WORKBOOK_ARCHIVE_BUCKET = "stock-opname-workbooks";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const makeSession = () => ({ id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active" });
     const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
-    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
-    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
-    const snapshotWorkspaceData = (source) => ({ products: source.products || [], serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], historyEvents: source.historyEvents || [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts: source.layouts || [...DEFAULT_LAYOUTS], layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} });
+    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const snapshotWorkspaceData = (source) => ({ products: source.products || [], serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], historyEvents: source.historyEvents || [], workbookFiles: Array.isArray(source.workbookFiles) ? source.workbookFiles : [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts: source.layouts || [...DEFAULT_LAYOUTS], layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} });
     const createWorkspace = (index, data = emptyWorkspaceData()) => ({ id: crypto.randomUUID(), name: `Sesi ${index}`, picNames: ["", ""], data });
     let state;
     try {
@@ -585,6 +586,51 @@
     }
     function activeWorkspaceName() {
       return activeWorkspace()?.name.trim() || "Nama Brand belum diisi";
+    }
+    async function uploadWorkbookArchive(file, sessionId) {
+      if (!authSession || !sharedStateReady) throw new Error("Login diperlukan untuk mengarsipkan file Excel.");
+      if (file.size > 50 * 1024 * 1024) throw new Error("Ukuran file Excel melebihi batas 50 MB.");
+      const extension = file.name.toLocaleLowerCase("id-ID").endsWith(".xls") ? "xls" : "xlsx";
+      const contentType = extension === "xls"
+        ? "application/vnd.ms-excel"
+        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      const storagePath = `${state.currentWorkspaceId}/${sessionId}/${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabaseClient.storage.from(WORKBOOK_ARCHIVE_BUCKET).upload(storagePath, file, {
+        contentType,
+        upsert: false
+      });
+      if (error) throw new Error(`File Excel gagal diarsipkan: ${error.message}`);
+      return {
+        id: crypto.randomUUID(),
+        name: file.name,
+        size: file.size,
+        contentType,
+        storagePath,
+        uploadedAt: new Date().toISOString(),
+        sessionId
+      };
+    }
+    async function removeArchivedWorkbookFiles(workbooks) {
+      const paths = [...new Set((workbooks || []).map((workbook) => workbook.storagePath).filter(Boolean))];
+      if (!paths.length) return;
+      const { error } = await supabaseClient.storage.from(WORKBOOK_ARCHIVE_BUCKET).remove(paths);
+      if (error) throw new Error(`File arsip gagal dihapus: ${error.message}`);
+    }
+    async function downloadArchivedWorkbook(sessionId, storagePath) {
+      const session = state.sessions.find((item) => item.id === sessionId);
+      const workbook = session?.workbooks?.find((item) => item.storagePath === storagePath);
+      if (!workbook) {
+        notify("File arsip tidak ditemukan.");
+        return;
+      }
+      try {
+        const { data, error } = await supabaseClient.storage.from(WORKBOOK_ARCHIVE_BUCKET)
+          .createSignedUrl(workbook.storagePath, 60, { download: workbook.name });
+        if (error) throw error;
+        window.location.assign(data.signedUrl);
+      } catch (error) {
+        notify(`File arsip gagal diunduh: ${error instanceof Error ? error.message : "kesalahan tidak diketahui"}`);
+      }
     }
     function recordActivity(type, description) {
       state.historyEvents.push({
@@ -681,6 +727,7 @@
       if (!Array.isArray(normalized.scanEvents)) normalized.scanEvents = [];
       if (!Array.isArray(normalized.historyEvents)) normalized.historyEvents = [];
       if (!Array.isArray(normalized.sessions)) normalized.sessions = [];
+      if (!Array.isArray(normalized.workbookFiles)) normalized.workbookFiles = [];
       for (const event of normalized.scanEvents) if (!event.id) event.id = crypto.randomUUID();
       if (!Array.isArray(normalized.workspaces) || !normalized.workspaces.length) {
         const first = createWorkspace(1, snapshotWorkspaceData(normalized));
@@ -1108,7 +1155,7 @@
 
     function renderCompletedSessions() {
       const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
-      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk PIC, Scan Layout, dan Result SO.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button></div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="11">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli yang diunggah, PIC, Scan Layout, dan Result SO.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button></div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="11">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessionView() {
@@ -1126,11 +1173,11 @@
       const session = state.sessions.find((item) => item.id === sessionId);
       if (!session) return;
       pendingCompletedSessionDeletionId = sessionId;
-      document.getElementById("delete-completed-session-message").textContent = `Sesi "${session.workspaceName || "Sesi opname"}" beserta data detailnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
+      document.getElementById("delete-completed-session-message").textContent = `Sesi "${session.workspaceName || "Sesi opname"}", file XLSX sumber, dan data detailnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
       document.getElementById("delete-completed-session-dialog").showModal();
     }
 
-    function deleteCompletedSession() {
+    async function deleteCompletedSession() {
       const session = state.sessions.find((item) => item.id === pendingCompletedSessionDeletionId);
       if (!session) {
         document.getElementById("delete-completed-session-dialog").close();
@@ -1138,6 +1185,17 @@
         notify("Sesi tidak ditemukan. Daftar sesi tidak berubah.");
         return;
       }
+      try {
+        await removeArchivedWorkbookFiles(session.workbooks);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "File arsip gagal dihapus.");
+        return;
+      }
+      const removedPaths = new Set((session.workbooks || []).map((workbook) => workbook.storagePath));
+      for (const workspace of state.workspaces) {
+        workspace.data.workbookFiles = (workspace.data.workbookFiles || []).filter((workbook) => !removedPaths.has(workbook.storagePath));
+      }
+      state.workbookFiles = (state.workbookFiles || []).filter((workbook) => !removedPaths.has(workbook.storagePath));
       state.sessions = state.sessions.filter((item) => item.id !== pendingCompletedSessionDeletionId);
       const wasSelected = selectedCompletedSessionId === pendingCompletedSessionDeletionId;
       pendingCompletedSessionDeletionId = "";
@@ -1155,6 +1213,8 @@
       const snapshot = session.snapshot;
       const scans = snapshot.scanEvents || [];
       const products = snapshot.products || [];
+      const workbooks = session.workbooks || [];
+      const workbookArchive = `<section class="table-section" style="margin:12px 0"><div class="table-toolbar"><div class="table-title">File XLSX sumber <span class="table-count">${workbooks.length} file</span></div></div>${workbooks.length ? `<div class="completed-export-actions">${workbooks.map((workbook) => `<button class="button button-secondary" type="button" data-download-workbook="${escapeHtml(workbook.storagePath)}" data-download-session="${escapeHtml(session.id)}">↓ ${escapeHtml(workbook.name)} · ${formatNumber(workbook.size / 1024)} KB</button>`).join("")}</div>` : `<div class="confirm-body">Tidak ada file XLSX yang diarsipkan untuk sesi ini.</div>`}</section>`;
       const layouts = snapshot.layouts?.length ? snapshot.layouts : [...new Set(scans.map((scan) => scan.layout).filter(Boolean))];
       const racks = layouts.map((layout) => {
         const rackScans = scans.filter((scan) => scan.layout === layout);
@@ -1169,7 +1229,7 @@
         const status = laptop ? (variance === 0 ? { label: "Sesuai", className: "match" } : variance < 0 ? { label: "Kurang", className: "shortage" } : { label: "Lebih", className: "different" }) : { label: "Bukan laptop", className: "non-laptop" };
         return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${laptop ? formatNumber(product.box || 0) : "-"}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
-      return `<div class="completed-export-actions"><button class="button button-primary" type="button" data-export-session="${escapeHtml(session.id)}">↓ Ekspor XLSX</button><button class="button button-secondary" type="button" data-print-session="${escapeHtml(session.id)}">▤ Print</button></div><div class="completed-detail-panel"><h3>Scan Layout · ${scans.length} scan</h3><div class="completed-racks">${racks || `<div class="completed-rack-meta">Tidak ada data Rack.</div>`}</div><h3>Result SO · ${products.length} item</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th><th>Note</th></tr></thead><tbody>${productRows || `<tr><td class="empty-row" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div></div>`;
+      return `${workbookArchive}<div class="completed-export-actions"><button class="button button-primary" type="button" data-export-session="${escapeHtml(session.id)}">↓ Ekspor XLSX</button><button class="button button-secondary" type="button" data-print-session="${escapeHtml(session.id)}">▤ Print</button></div><div class="completed-detail-panel"><h3>Scan Layout · ${scans.length} scan</h3><div class="completed-racks">${racks || `<div class="completed-rack-meta">Tidak ada data Rack.</div>`}</div><h3>Result SO · ${products.length} item</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th><th>Note</th></tr></thead><tbody>${productRows || `<tr><td class="empty-row" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div></div>`;
     }
 
     function exportCompletedSession(sessionId) {
@@ -1395,11 +1455,11 @@
         return;
       }
       pendingWorkspaceDeletionId = workspaceId;
-      document.getElementById("delete-workspace-message").textContent = `Sesi "${workspace.name || "Tanpa nama"}", seluruh data master, scan, aktivitas, dan arsip stock opname terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
+      document.getElementById("delete-workspace-message").textContent = `Sesi "${workspace.name || "Tanpa nama"}", seluruh data master, scan, aktivitas, arsip stock opname, dan file XLSX terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
       document.getElementById("delete-workspace-dialog").showModal();
     }
 
-    function deleteWorkspace() {
+    async function deleteWorkspace() {
       if (!isSuperAdmin()) {
         pendingWorkspaceDeletionId = "";
         document.getElementById("delete-workspace-dialog").close();
@@ -1414,8 +1474,18 @@
         return;
       }
       const workspaceId = workspace.id;
+      if (workspaceId === state.currentWorkspaceId) persist();
+      const archivedWorkbooks = [
+        ...(workspace.data.workbookFiles || []),
+        ...state.sessions.filter((session) => session.workspaceId === workspaceId).flatMap((session) => session.workbooks || [])
+      ];
+      try {
+        await removeArchivedWorkbookFiles(archivedWorkbooks);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "File arsip gagal dihapus.");
+        return;
+      }
       if (workspaceId === state.currentWorkspaceId) {
-        persist();
         const nextWorkspace = state.workspaces.find((item) => item.id !== workspaceId);
         state.currentWorkspaceId = nextWorkspace.id;
         Object.assign(state, snapshotWorkspaceData(nextWorkspace.data));
@@ -1535,6 +1605,7 @@
       });
       document.querySelectorAll("[data-export-session]").forEach((button) => button.addEventListener("click", () => exportCompletedSession(button.dataset.exportSession)));
       document.querySelectorAll("[data-print-session]").forEach((button) => button.addEventListener("click", () => printCompletedSession(button)));
+      document.querySelectorAll("[data-download-workbook]").forEach((button) => button.addEventListener("click", () => downloadArchivedWorkbook(button.dataset.downloadSession, button.dataset.downloadWorkbook)));
       document.querySelectorAll("[data-workspace-name]").forEach((input) => input.addEventListener("change", () => {
         const workspace = state.workspaces.find((item) => item.id === input.dataset.workspaceName);
         if (!workspace) return;
@@ -1738,6 +1809,8 @@
       event.target.value = "";
       if (!file) return;
       if (typeof XLSX === "undefined") { notify("Parser Excel tidak termuat. Periksa koneksi internet lalu muat ulang aplikasi."); return; }
+      if (!/\.(xlsx|xls)$/i.test(file.name)) { notify("Pilih file Excel berformat .xlsx atau .xls."); return; }
+      if (file.size > 50 * 1024 * 1024) { notify("Ukuran file Excel melebihi batas arsip 50 MB."); return; }
       if (state.products.length && state.scanEvents.length && !window.confirm("Workbook baru akan mengganti data sesi yang sedang berjalan. Lanjutkan?")) return;
       try {
         const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
@@ -1816,6 +1889,8 @@
           }
         }
         if (!productsByCode.size) {
+          const newSession = makeSession();
+          const archivedWorkbook = await uploadWorkbookArchive(file, newSession.id);
           state.products = [];
           state.serialMaster = {};
           state.scanEvents = [];
@@ -1824,12 +1899,15 @@
           state.layoutNumbers = {};
           state.importFile = file.name;
           state.importMessage = "Template dikenali, tetapi belum ada baris data VEF.";
-          state.activeSession = makeSession();
+          state.activeSession = newSession;
+          state.workbookFiles = [...(state.workbookFiles || []), archivedWorkbook];
           persist();
           render();
-          notify("Template dikenali. Isi Serial No dan Item Code pada tab VEF Master, lalu unggah ulang.");
+          notify("Template dikenali dan diarsipkan. Isi Serial No dan Item Code pada tab VEF Master, lalu unggah ulang.");
           return;
         }
+        const newSession = makeSession();
+        const archivedWorkbook = await uploadWorkbookArchive(file, newSession.id);
         state.products = [...productsByCode.values()].sort((a, b) => a.sku.localeCompare(b.sku, "id-ID"));
         state.serialMaster = serialMaster;
         state.scanEvents = [];
@@ -1841,14 +1919,15 @@
         state.importFile = file.name;
         state.importMessage = isDailyWorkbook ? "" : "Master SN siap; mulai scan di aplikasi.";
         state.lastScan = null;
-        state.activeSession = makeSession();
+        state.activeSession = newSession;
+        state.workbookFiles = [...(state.workbookFiles || []), archivedWorkbook];
         persist();
         currentPage = "opname";
         render();
-        notify(`Master dimuat: ${state.products.length} item per warehouse, ${Object.keys(serialMaster).length} serial.`);
+        notify(`Master dimuat dan file diarsipkan: ${state.products.length} item per warehouse, ${Object.keys(serialMaster).length} serial.`);
       } catch (error) {
         console.error(error);
-        notify("Workbook tidak dapat dibaca. Pastikan file Excel valid dan tidak terkunci.");
+        notify(error instanceof Error ? error.message : "Workbook tidak dapat diproses atau diarsipkan.");
       }
     }
 
@@ -1868,7 +1947,8 @@
         layoutQuantities: state.layoutQuantities,
         layoutNumbers: state.layoutNumbers
       }));
-      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], startedAt: state.activeSession.startedAt, finishedAt, snapshot });
+      const workbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === state.activeSession.id);
+      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], startedAt: state.activeSession.startedAt, finishedAt, snapshot, workbooks });
       state.activeSession = { ...state.activeSession, status: "completed", finishedAt };
       recordActivity("Sesi diselesaikan", `Stock opname ${activeWorkspace()?.name || "Sesi opname"} diselesaikan.`);
       persist();
@@ -1890,10 +1970,19 @@
       notify("Sesi opname baru dimulai.");
     }
 
-    function deleteAllMasterData() {
+    async function deleteAllMasterData() {
+      const currentSessionWorkbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === state.activeSession.id);
+      try {
+        await removeArchivedWorkbookFiles(currentSessionWorkbooks);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "File arsip gagal dihapus.");
+        return;
+      }
       state.products = [];
       state.serialMaster = {};
       state.scanEvents = [];
+      const removedPaths = new Set(currentSessionWorkbooks.map((workbook) => workbook.storagePath));
+      state.workbookFiles = (state.workbookFiles || []).filter((workbook) => !removedPaths.has(workbook.storagePath));
       state.lastScan = null;
       state.importFile = "";
       state.importMessage = "";

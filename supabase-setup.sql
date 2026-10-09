@@ -62,12 +62,12 @@ declare
   old_workspace_ids text[];
   new_workspace_ids text[];
 begin
-  select array_agg(workspace ->> 'id' order by workspace ->> 'id')
+  select array_agg(workspace.value ->> 'id' order by workspace.value ->> 'id')
     into old_workspace_ids
-    from jsonb_array_elements(coalesce(old.data -> 'workspaces', '[]'::jsonb)) as workspace;
-  select array_agg(workspace ->> 'id' order by workspace ->> 'id')
+    from jsonb_array_elements(coalesce(old.data -> 'workspaces', '[]'::jsonb)) as workspace(value);
+  select array_agg(workspace.value ->> 'id' order by workspace.value ->> 'id')
     into new_workspace_ids
-    from jsonb_array_elements(coalesce(new.data -> 'workspaces', '[]'::jsonb)) as workspace;
+    from jsonb_array_elements(coalesce(new.data -> 'workspaces', '[]'::jsonb)) as workspace(value);
 
   if old_workspace_ids is distinct from new_workspace_ids
     and (
@@ -86,3 +86,34 @@ drop trigger if exists guard_stock_opname_workspace_membership on public.stock_o
 create trigger guard_stock_opname_workspace_membership
   before update on public.stock_opname_state
   for each row execute function public.guard_stock_opname_workspace_membership();
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'stock-opname-workbooks',
+  'stock-opname-workbooks',
+  false,
+  52428800,
+  array[
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ]
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Team members can read archived stock opname workbooks" on storage.objects;
+create policy "Team members can read archived stock opname workbooks"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'stock-opname-workbooks');
+
+drop policy if exists "Team members can upload archived stock opname workbooks" on storage.objects;
+create policy "Team members can upload archived stock opname workbooks"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'stock-opname-workbooks');
+
+drop policy if exists "Team members can delete archived stock opname workbooks" on storage.objects;
+create policy "Team members can delete archived stock opname workbooks"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'stock-opname-workbooks');
