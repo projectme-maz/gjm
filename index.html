@@ -738,6 +738,15 @@
     let toastTimer;
     let authSession = null;
     let pendingPasswordChange = null;
+    let idleCheckTimer = null;
+    let idleActivityStorageKey = "";
+    let lastIdleActivityWrite = 0;
+    let lastIdleActivityCheck = 0;
+    let idleLogoutInProgress = false;
+    let idleLogoutMessage = "";
+    const IDLE_TIMEOUT_MS = 5 * 60 * 60 * 1000;
+    const IDLE_CHECK_INTERVAL_MS = 60 * 1000;
+    const IDLE_ACTIVITY_WRITE_INTERVAL_MS = 15 * 1000;
     let adminUsers = [];
     let adminNotice = "";
     let adminNoticeType = "success";
@@ -926,7 +935,19 @@
       sharedStateReady = false;
       clearTimeout(syncTimer);
       clearInterval(refreshTimer);
+      clearInterval(idleCheckTimer);
       refreshTimer = null;
+      idleCheckTimer = null;
+      if (idleActivityStorageKey) {
+        try {
+          localStorage.removeItem(idleActivityStorageKey);
+        } catch (error) {
+          console.error("Preferensi waktu aktivitas tidak dapat dihapus:", error);
+        }
+      }
+      idleActivityStorageKey = "";
+      lastIdleActivityWrite = 0;
+      lastIdleActivityCheck = 0;
       document.body.classList.add("auth-locked");
       document.getElementById("profile-email").textContent = "";
       document.getElementById("profile-role").textContent = "";
@@ -943,6 +964,91 @@
       document.getElementById("profile-name").textContent = username;
       document.getElementById("profile-role").textContent = isSuperAdmin() ? "Super Admin · Pemilik" : "Staf";
       document.getElementById("admin-users-nav").hidden = !isSuperAdmin();
+      beginIdleTracking(session);
+    }
+    function getLastActivity() {
+      try {
+        const stored = Number(localStorage.getItem(idleActivityStorageKey));
+        return Number.isFinite(stored) && stored > 0 ? stored : 0;
+      } catch (error) {
+        console.error("Waktu aktivitas sesi tidak dapat dibaca:", error);
+        return 0;
+      }
+    }
+    function storeLastActivity(timestamp) {
+      try {
+        localStorage.setItem(idleActivityStorageKey, String(timestamp));
+        return true;
+      } catch (error) {
+        console.error("Waktu aktivitas sesi tidak dapat disimpan:", error);
+        notify("Browser tidak dapat menyimpan waktu aktivitas sesi. Logout otomatis mungkin tidak akurat.");
+        return false;
+      }
+    }
+    function initializeIdleTracking(session, freshLogin = false) {
+      idleActivityStorageKey = `ruangstok-last-activity:${session.user.id}`;
+      const now = Date.now();
+      if (freshLogin) {
+        lastIdleActivityWrite = now;
+        lastIdleActivityCheck = now;
+        storeLastActivity(now);
+        return false;
+      }
+      const lastActivity = getLastActivity();
+      if (!lastActivity) {
+        lastIdleActivityWrite = now;
+        lastIdleActivityCheck = now;
+        storeLastActivity(now);
+        return false;
+      }
+      if (lastActivity > now) {
+        lastIdleActivityWrite = now;
+        lastIdleActivityCheck = now;
+        storeLastActivity(now);
+        return false;
+      }
+      lastIdleActivityWrite = lastActivity;
+      lastIdleActivityCheck = now;
+      return now - lastActivity >= IDLE_TIMEOUT_MS;
+    }
+    async function expireIdleSession() {
+      if (!authSession || idleLogoutInProgress) return;
+      idleLogoutInProgress = true;
+      idleLogoutMessage = "Sesi berakhir karena tidak ada aktivitas selama 5 jam. Silakan login kembali.";
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        console.error("Logout otomatis gagal:", error);
+        lockApp();
+        showAuthMessage(`${idleLogoutMessage} Logout otomatis gagal: ${error.message}`);
+        idleLogoutMessage = "";
+        idleLogoutInProgress = false;
+      }
+    }
+    function checkIdleSession() {
+      if (!authSession || document.body.classList.contains("auth-locked") || idleLogoutInProgress) return;
+      const lastActivity = getLastActivity();
+      const now = Date.now();
+      if (!lastActivity || now - lastActivity >= IDLE_TIMEOUT_MS) {
+        void expireIdleSession();
+        return;
+      }
+      lastIdleActivityCheck = now;
+    }
+    function recordUserActivity() {
+      if (!authSession || document.body.classList.contains("auth-locked") || idleLogoutInProgress) return;
+      const now = Date.now();
+      if (now - lastIdleActivityCheck >= IDLE_ACTIVITY_WRITE_INTERVAL_MS) {
+        checkIdleSession();
+        if (!authSession || idleLogoutInProgress) return;
+      }
+      if (now - lastIdleActivityWrite < IDLE_ACTIVITY_WRITE_INTERVAL_MS) return;
+      if (storeLastActivity(now)) lastIdleActivityWrite = now;
+    }
+    function beginIdleTracking(session) {
+      clearInterval(idleCheckTimer);
+      idleLogoutInProgress = false;
+      idleActivityStorageKey = `ruangstok-last-activity:${session.user.id}`;
+      idleCheckTimer = setInterval(checkIdleSession, IDLE_CHECK_INTERVAL_MS);
     }
     const isSuperAdmin = () => authSession?.user?.app_metadata?.role === "super_admin"
       && authSession?.user?.app_metadata?.owner_username === "indra";
@@ -959,15 +1065,19 @@
     async function readSharedState() {
       return supabaseClient.from(SHARED_STATE_TABLE).select("data, updated_at").eq("id", SHARED_STATE_ROW_ID).maybeSingle();
     }
-    async function startAuthenticatedSession(session) {
+    async function startAuthenticatedSession(session, freshLogin = false) {
       if (!session?.user) return;
       if (session.user.user_metadata?.must_change_password) {
         showPasswordSetup(session);
         return;
       }
+      authSession = session;
+      if (initializeIdleTracking(session, freshLogin)) {
+        await expireIdleSession();
+        return;
+      }
       setLoginBusy(true);
       showAuthMessage("");
-      authSession = session;
       try {
         const { data: row, error } = await readSharedState();
         if (error) throw error;
@@ -1073,7 +1183,7 @@
           refresh_token: loginData.refresh_token
         });
         if (error) throw error;
-        await startAuthenticatedSession(data.session);
+        await startAuthenticatedSession(data.session, true);
       } catch (error) {
         const message = await getFunctionErrorMessage(error) || "Login gagal. Periksa username dan password.";
         showAuthMessage(/failed to send a request|function .*not found|failed to fetch/i.test(message)
@@ -2215,6 +2325,15 @@
     }
     positionDeveloperWatermark();
     window.addEventListener("resize", positionDeveloperWatermark);
+    for (const eventName of ["pointerdown", "pointermove", "keydown", "scroll", "touchstart", "click"]) {
+      document.addEventListener(eventName, recordUserActivity, { passive: true });
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") checkIdleSession();
+    });
+    window.addEventListener("storage", (event) => {
+      if (event.key === idleActivityStorageKey && event.newValue) checkIdleSession();
+    });
     appShell.addEventListener("transitionend", (event) => {
       if (event.propertyName === "grid-template-columns") positionDeveloperWatermark();
     });
@@ -2265,13 +2384,16 @@
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isPasswordSetupLink()))) showPasswordSetup(session);
       if (event === "SIGNED_OUT") {
+        const message = idleLogoutMessage;
         lockApp();
         pendingPasswordChange = null;
         document.getElementById("login-form").hidden = false;
         document.getElementById("password-setup-form").hidden = true;
         document.querySelector(".auth-card h1").textContent = "Login Account";
         document.querySelector(".auth-description").textContent = "Login menggunakan username dan password dari admin. Data stock opname dibagikan ke seluruh tim.";
-        showAuthMessage("");
+        showAuthMessage(message);
+        idleLogoutMessage = "";
+        idleLogoutInProgress = false;
       }
     });
     supabaseClient.auth.getSession().then(({ data, error }) => {
