@@ -18,30 +18,54 @@ The browser app uses the Supabase project URL and publishable key in `index.html
 
 1. In Supabase **Authentication → Settings**, disable public sign-ups.
 2. In **Authentication → URL Configuration**, set **Site URL** to `https://projectme-maz.github.io/gjm/` and add that same address under **Redirect URLs**.
-3. In **SQL Editor → New query**, paste the contents of [`supabase-setup.sql`](./supabase-setup.sql), and click **Run**. This creates the shared-state table and a private username-to-email mapping table.
-4. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then open a terminal in this project folder and run:
+3. In **SQL Editor → New query**, paste the contents of [`supabase-setup.sql`](./supabase-setup.sql), and click **Run**. This creates the shared-state table and a private username-to-auth-account mapping table.
+4. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then open a terminal in this project folder and deploy both Edge Functions:
 
    ```powershell
-   npx supabase login
-   npx supabase link --project-ref kdeculjdbmhhhnqaonzb
-   npx supabase functions deploy login-with-username --project-ref kdeculjdbmhhhnqaonzb
+   npx.cmd --yes supabase login
+   npx.cmd --yes supabase link --project-ref kdeculjdbmhhhnqaonzb
+   npx.cmd --yes supabase functions deploy login-with-username --project-ref kdeculjdbmhhhnqaonzb
+   npx.cmd --yes supabase functions deploy provision-stock-users --project-ref kdeculjdbmhhhnqaonzb
    ```
 
-   The function uses Supabase's built-in server-side credentials. Never put a secret or `service_role` key in browser code or commit one to GitHub.
+   On PowerShell, use `npx.cmd` rather than `npx` if script execution is blocked. The functions use Supabase's built-in server-side credentials. Never put a secret or `service_role` key in browser code or commit one to GitHub.
 
-5. In **Authentication → Users**, use **Invite user** to invite your own email. The user follows the invitation email to set a password on the app.
-6. Add a username mapping in **SQL Editor**. Replace the example username and email with the invited account's values, using lowercase:
+5. Publish the updated `index.html` to GitHub Pages before creating the staff accounts. The updated app is required to securely verify the temporary password and force each person to replace it on first login.
+6. Run the following in the same PowerShell window to create the 19 staff accounts. It creates a random one-time provisioning key, saves it only as a Supabase Edge Function secret, and calls the protected function. The function generates one random temporary password for newly created accounts; it is shown in the result only once.
 
-   ```sql
-   insert into public.stock_opname_usernames (username, email)
-   values ('admin', 'your-email@example.com');
+   ```powershell
+   $bytes = New-Object byte[] 32
+   $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+   $rng.GetBytes($bytes)
+   $provisionKey = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+   $rng.Dispose()
+
+   npx.cmd --yes supabase secrets set "STOCK_OPNAME_PROVISION_KEY=$provisionKey" --project-ref kdeculjdbmhhhnqaonzb
+
+   $publishableKey = "sb_publishable_w2fpQZE11m9h00HAXNNFTA_5L7i_Jlf"
+   $headers = @{
+     apikey = $publishableKey
+     Authorization = "Bearer $publishableKey"
+     "x-provisioning-key" = $provisionKey
+   }
+   $result = Invoke-RestMethod `
+     -Uri "https://kdeculjdbmhhhnqaonzb.supabase.co/functions/v1/provision-stock-users" `
+     -Method Post -Headers $headers -ContentType "application/json" -Body "{}"
+   $result | ConvertTo-Json -Depth 5
    ```
 
-   Repeat the invite and mapping steps for each staff member. Usernames must be 3–30 characters and may contain lowercase letters, numbers, dots, underscores, and hyphens.
+   Confirm that `failed` is empty and check the `created` and `existing` lists. Keep the temporary password private and share it directly with staff. Then disable the one-time provisioning endpoint by removing its key:
 
-7. Open the deployed GitHub Pages URL and log in with the username and password you set from the invitation email.
+   ```powershell
+   npx.cmd --yes supabase secrets unset STOCK_OPNAME_PROVISION_KEY --project-ref kdeculjdbmhhhnqaonzb
+   Remove-Variable provisionKey, headers, result, publishableKey, bytes, rng
+   ```
+
+   To reset a staff password later, create and set a new provisioning key as above, then call the same endpoint with `-Body '{"action":"reset-password","username":"indra"}'` (replace `indra` with the lowercase username). It returns a new temporary password; the staff member must change it at their next login. Remove the secret again when finished.
+
+7. Open the deployed application. Staff log in with their lowercase username (`indra`, `dinar`, `beni`, `rosadi`, `ivan`, `iyant`, `arief`, `dimas`, `bara`, `rino`, `ahmad`, `rangga`, `dyah`, `putri`, `boniex`, `andri`, `fadhil`, `yusuf`, or `yoga`) and the temporary password. On first login, each person must set a new password of at least 8 characters.
 8. The first successful login creates the shared workspace record. If this browser has existing locally saved app data, that data is used to initialize the shared record. Back up important data before setup.
 
 Authenticated staff share one workspace dataset. Changes are saved to Supabase and other open sessions check for updates every eight seconds. Data is no longer limited to the local browser after the shared record has been initialized.
 
-The SQL keeps username-to-email mappings private from browser users, does not grant database access to anonymous visitors, and does not allow authenticated users to delete the shared record. Anyone you invite can read and edit the shared stock-opname data; invite only trusted staff.
+The generated `@users.stock-opname.invalid` addresses are internal identifiers only; staff do not need personal email addresses and cannot receive password recovery email. If someone forgets a password, an administrator must reset it. The SQL keeps the username mapping private from browser users, does not grant database access to anonymous visitors, and does not allow authenticated users to delete the shared record. Every staff account can read and edit the shared stock-opname data; give the temporary password only to trusted staff.

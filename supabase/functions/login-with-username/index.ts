@@ -54,6 +54,11 @@ Deno.serve(async (request: Request) => {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
     return jsonResponse(400, { error: "Username atau password salah." }, origin);
   }
+  if (input.action === "reset-password") {
+    return jsonResponse(200, {
+      message: "Akun ini tidak menggunakan email pemulihan. Hubungi admin untuk mengatur ulang password.",
+    }, origin);
+  }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -68,29 +73,50 @@ Deno.serve(async (request: Request) => {
     console.error("Username lookup failed:", lookupError.message);
     return jsonResponse(503, { error: "Login service is temporarily unavailable." }, origin);
   }
-  if (!account) {
-    if (input.action === "reset-password") {
-      return jsonResponse(200, {
-        message: "Jika username terdaftar, tautan pengaturan password telah dikirim ke email akun.",
-      }, origin);
-    }
-    return jsonResponse(401, { error: "Username atau password salah." }, origin);
-  }
+  if (!account) return jsonResponse(401, { error: "Username atau password salah." }, origin);
 
   const authClient = createClient(supabaseUrl, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  if (input.action === "reset-password") {
-    const { error } = await authClient.auth.resetPasswordForEmail(account.email, {
-      redirectTo: `${appOrigin}/gjm/`,
+  if (input.action === "change-initial-password") {
+    if (
+      typeof input.temporaryPassword !== "string" ||
+      !input.temporaryPassword ||
+      typeof input.password !== "string" ||
+      input.password.length < 8
+    ) {
+      return jsonResponse(400, { error: "Password baru harus terdiri dari minimal 8 karakter." }, origin);
+    }
+    const { data: temporarySession, error: temporaryLoginError } = await authClient.auth.signInWithPassword({
+      email: account.email,
+      password: input.temporaryPassword,
     });
-    if (error) {
-      console.error("Password reset request failed:", error.message);
-      return jsonResponse(503, { error: "Tautan reset password gagal dikirim. Coba lagi nanti." }, origin);
+    if (temporaryLoginError || !temporarySession.user) {
+      return jsonResponse(401, { error: "Sesi penggantian password tidak berlaku. Silakan login ulang." }, origin);
+    }
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(temporarySession.user.id, {
+      password: input.password,
+      user_metadata: {
+        ...temporarySession.user.user_metadata,
+        must_change_password: false,
+      },
+    });
+    if (updateError) {
+      console.error("Initial password update failed:", updateError.message);
+      return jsonResponse(400, { error: updateError.message }, origin);
+    }
+    const { data: updatedSession, error: updatedLoginError } = await authClient.auth.signInWithPassword({
+      email: account.email,
+      password: input.password,
+    });
+    if (updatedLoginError || !updatedSession.session) {
+      console.error("Session creation after initial password update failed:", updatedLoginError?.message);
+      return jsonResponse(503, { error: "Password tersimpan, tetapi login ulang gagal. Coba masuk kembali." }, origin);
     }
     return jsonResponse(200, {
-      message: "Jika username terdaftar, tautan pengaturan password telah dikirim ke email akun.",
+      access_token: updatedSession.session.access_token,
+      refresh_token: updatedSession.session.refresh_token,
     }, origin);
   }
 
@@ -104,6 +130,9 @@ Deno.serve(async (request: Request) => {
   });
   if (error || !data.session) {
     return jsonResponse(401, { error: "Username atau password salah." }, origin);
+  }
+  if (data.user.user_metadata?.must_change_password) {
+    return jsonResponse(200, { requires_password_change: true }, origin);
   }
 
   return jsonResponse(200, {

@@ -83,7 +83,6 @@
     .auth-message.visible { display: block; }
     .auth-message.success { background: var(--green-soft); border-color: #cde2cd; color: var(--green); }
     .auth-help { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 17px 0 0; }
-    .auth-forgot { background: none; border: 0; color: var(--green); font-size: 10px; justify-self: end; padding: 0; text-decoration: underline; }
     body.auth-locked .app-shell, body.auth-locked .toast, body.auth-locked > dialog { display: none; }
     body:not(.auth-locked) .auth-screen { display: none; }
     @media (min-width: 651px) {
@@ -403,11 +402,10 @@
     <div class="auth-card">
       <div class="auth-brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21M8.2 5l7.7 4.3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="m9.6 15 1.5 1.5 3.4-3.5" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div><div><div class="brand-name">STOCK OPNAME</div><div class="brand-caption">serial number opname</div></div><span class="auth-copyright">© M-Maz</span></div>
       <h1>Login Account</h1>
-      <p class="auth-description">Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.</p>
+      <p class="auth-description">Login menggunakan username dan password dari admin. Data stock opname dibagikan ke seluruh tim.</p>
       <form class="auth-form" id="login-form">
         <div class="auth-field"><label for="login-username">Username</label><input class="auth-input" id="login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="Masukkan username"></div>
         <div class="auth-field"><label for="login-password">Password</label><input class="auth-input" id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="Masukkan password"></div>
-        <button class="auth-forgot" id="forgot-password" type="button">Lupa password? / Atur password undangan</button>
         <button class="auth-submit" id="login-submit" type="submit">Masuk</button>
       </form>
       <form class="auth-form" id="password-setup-form" hidden>
@@ -416,7 +414,7 @@
         <button class="auth-submit" id="password-setup-submit" type="submit">Simpan password</button>
       </form>
       <div class="auth-message" id="auth-message" role="alert"></div>
-      <p class="auth-help">Belum punya akun? Minta admin mengundang email Anda melalui Supabase. Pendaftaran umum dinonaktifkan.</p>
+      <p class="auth-help">Akun dibuat oleh admin. Saat pertama kali masuk, Anda akan diminta mengganti password sementara. Jika lupa password, hubungi admin.</p>
     </div>
   </section>
   <div class="app-shell">
@@ -513,6 +511,7 @@
     let searchTerm = "";
     let toastTimer;
     let authSession = null;
+    let pendingPasswordChange = null;
     let sharedStateReady = false;
     let remoteUpdatedAt = "";
     let lastSyncedState = "";
@@ -661,9 +660,9 @@
     function unlockApp(session) {
       authSession = session;
       document.body.classList.remove("auth-locked");
-      const email = session.user.email || "Pengguna";
-      document.getElementById("profile-email").textContent = email;
-      document.getElementById("profile-avatar").textContent = email.slice(0, 2).toLocaleUpperCase("id-ID");
+      const username = session.user.user_metadata?.username || session.user.email || "Pengguna";
+      document.getElementById("profile-email").textContent = username;
+      document.getElementById("profile-avatar").textContent = username.slice(0, 2).toLocaleUpperCase("id-ID");
     }
     function databaseSetupHint(error) {
       const message = `${error.message || ""} ${error.details || ""}`;
@@ -680,6 +679,10 @@
     }
     async function startAuthenticatedSession(session) {
       if (!session?.user) return;
+      if (session.user.user_metadata?.must_change_password) {
+        showPasswordSetup(session);
+        return;
+      }
       setLoginBusy(true);
       showAuthMessage("");
       authSession = session;
@@ -772,6 +775,14 @@
           }
         });
         if (loginError) throw loginError;
+        if (loginData?.requires_password_change) {
+          pendingPasswordChange = {
+            username: form.elements.username.value.trim().toLowerCase(),
+            temporaryPassword: form.elements.password.value
+          };
+          showPasswordSetup(null);
+          return;
+        }
         if (!loginData?.access_token || !loginData?.refresh_token) {
           throw new Error("Layanan login username belum siap. Hubungi admin untuk menyelesaikan setup Supabase.");
         }
@@ -790,33 +801,6 @@
         setLoginBusy(false);
       }
     }
-    async function sendPasswordReset() {
-      const username = document.getElementById("login-username").value.trim();
-      if (!username) {
-        showAuthMessage("Masukkan username akun Anda terlebih dahulu.");
-        document.getElementById("login-username").focus();
-        return;
-      }
-      const button = document.getElementById("forgot-password");
-      button.disabled = true;
-      try {
-        const { data, error } = await supabaseClient.functions.invoke("login-with-username", {
-          body: { action: "reset-password", username }
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        const message = document.getElementById("auth-message");
-        showAuthMessage(data?.message || "Jika username terdaftar, tautan untuk mengatur password telah dikirim ke email akun.");
-        message.classList.add("success");
-      } catch (error) {
-        const detail = await getFunctionErrorMessage(error);
-        showAuthMessage(/failed to send a request|function .*not found|failed to fetch/i.test(detail)
-          ? "Layanan login username belum aktif. Minta admin memasang Edge Function Supabase mengikuti README."
-          : detail || "Tautan pengaturan password gagal dikirim.");
-      } finally {
-        button.disabled = false;
-      }
-    }
     async function saveNewPassword(event) {
       event.preventDefault();
       const form = event.currentTarget;
@@ -825,12 +809,43 @@
         showAuthMessage("Password dan konfirmasi password tidak sama.");
         return;
       }
+      if (password.length < 8) {
+        showAuthMessage("Password harus terdiri dari minimal 8 karakter.");
+        return;
+      }
       const button = document.getElementById("password-setup-submit");
       button.disabled = true;
       button.textContent = "Menyimpan...";
       try {
-        const { error } = await supabaseClient.auth.updateUser({ password });
-        if (error) throw error;
+        if (pendingPasswordChange) {
+          const { data, error } = await supabaseClient.functions.invoke("login-with-username", {
+            body: {
+              action: "change-initial-password",
+              username: pendingPasswordChange.username,
+              temporaryPassword: pendingPasswordChange.temporaryPassword,
+              password
+            }
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          if (!data?.access_token || !data?.refresh_token) {
+            throw new Error("Password gagal diperbarui. Minta admin memeriksa layanan login.");
+          }
+          pendingPasswordChange = null;
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token
+          });
+          if (sessionError) throw sessionError;
+          authSession = sessionData.session;
+        } else {
+          const { data, error } = await supabaseClient.auth.updateUser({
+            password,
+            data: { ...authSession.user.user_metadata, must_change_password: false }
+          });
+          if (error) throw error;
+          authSession = { ...authSession, user: data.user };
+        }
         history.replaceState(null, "", location.pathname);
         document.getElementById("password-setup-form").reset();
         await startAuthenticatedSession(authSession);
@@ -886,7 +901,7 @@
       const pics = activeWorkspace()?.picNames || [];
       const showPics = currentPage === "opname" || currentPage === "layouts" || currentPage === "products";
       const picMarkup = showPics && pics.some((name) => name.trim()) ? `<span class="top-pics">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</span>` : "";
-      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
+      return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<div class="top-account"><span class="top-account-email">${escapeHtml(authSession?.user?.user_metadata?.username || authSession?.user?.email || "")}</span><button class="top-logout" data-logout type="button">Keluar</button></div></div></div>`;
     };
     const productRows = (products) => products.length ? products.map((product, index) => {
       const laptop = isLaptopProduct(product);
@@ -1739,17 +1754,17 @@
     document.getElementById("confirm-delete-completed-session").addEventListener("click", deleteCompletedSession);
     document.getElementById("login-form").addEventListener("submit", signIn);
     document.getElementById("password-setup-form").addEventListener("submit", saveNewPassword);
-    document.getElementById("forgot-password").addEventListener("click", sendPasswordReset);
     document.getElementById("logout-button").addEventListener("click", signOut);
     const isPasswordSetupLink = () => /(?:[?&#]type=(?:invite|recovery)|[?&]code=)/i.test(`${location.search}${location.hash}`);
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isPasswordSetupLink()))) showPasswordSetup(session);
       if (event === "SIGNED_OUT") {
         lockApp();
+        pendingPasswordChange = null;
         document.getElementById("login-form").hidden = false;
         document.getElementById("password-setup-form").hidden = true;
         document.querySelector(".auth-card h1").textContent = "Login Account";
-        document.querySelector(".auth-description").textContent = "Login dengan akun staf yang telah diundang admin. Data stock opname dibagikan ke seluruh tim.";
+        document.querySelector(".auth-description").textContent = "Login menggunakan username dan password dari admin. Data stock opname dibagikan ke seluruh tim.";
         showAuthMessage("");
       }
     });
