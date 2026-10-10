@@ -64,6 +64,15 @@
     .logout-button { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.17); border-radius: 7px; color: #f4f8f2; font-size: 10px; margin-left: auto; padding: 6px 8px; }
     .logout-button:hover { background: rgba(255,255,255,.18); }
     .auth-screen { align-items: center; background: radial-gradient(ellipse at 82% 10%, rgba(218,237,216,.5), transparent 35%), var(--canvas); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 20; }
+    .auth-loading { align-items: center; background: radial-gradient(ellipse at 82% 10%, rgba(218,237,216,.16), transparent 35%), #111b1a; color: #f4f8f2; display: none; inset: 0; justify-content: center; position: fixed; z-index: 30; }
+    .auth-loading-card { align-items: center; display: flex; flex-direction: column; gap: 13px; }
+    .auth-loading-mark { align-items: center; background: linear-gradient(145deg, #287c69, #124a41); border: 1px solid rgba(255,255,255,.2); border-radius: 13px; color: #b8d8c9; display: flex; height: 48px; justify-content: center; width: 48px; }
+    .auth-loading-mark svg { height: 28px; width: 28px; }
+    .auth-loading-text { color: #c3d7d0; font-size: 12px; }
+    .auth-loading-spinner { animation: auth-loading-spin .8s linear infinite; border: 2px solid rgba(184,216,201,.22); border-radius: 50%; border-top-color: #9bd4bd; height: 17px; width: 17px; }
+    @keyframes auth-loading-spin { to { transform: rotate(360deg); } }
+    body.auth-checking .auth-screen, body.auth-checking .app-shell, body.auth-checking .toast, body.auth-checking > dialog, body.auth-checking .developer-watermark { display: none; }
+    body.auth-checking .auth-loading { display: flex; }
     .auth-card { animation: dashboard-enter .28s ease both; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 22px 70px rgba(29,53,36,.13); max-width: 420px; padding: 32px; width: 100%; }
     @media (min-width: 851px) {
       .auth-screen { justify-content: flex-start; padding-left: clamp(32px, 8vw, 120px); padding-right: 32px; }
@@ -598,7 +607,10 @@
     html[data-theme="dark"] .select-input option { background: #1a2826; color: var(--ink); }
   </style>
 </head>
-<body class="auth-locked">
+<body class="auth-checking auth-locked">
+  <section class="auth-loading" aria-label="Memeriksa sesi login" role="status">
+    <div class="auth-loading-card"><div class="auth-loading-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.2v9.4L12 21l-8-4.4V7.2L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="m4.4 7.3 7.6 4.2 7.6-4.2M12 11.5V21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></div><div class="auth-loading-spinner" aria-hidden="true"></div><div class="auth-loading-text">Memeriksa sesi login...</div></div>
+  </section>
   <section class="auth-screen" id="auth-screen" aria-label="Login">
     <button class="theme-toggle auth-theme-toggle" type="button" data-theme-toggle aria-label="Aktifkan dark mode" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-label">Dark</span></button>
     <div class="auth-card">
@@ -939,6 +951,7 @@
     }
     function showPasswordSetup(session) {
       authSession = session;
+      document.body.classList.remove("auth-checking");
       document.getElementById("login-form").hidden = true;
       document.getElementById("password-setup-form").hidden = false;
       document.querySelector(".auth-card h1").textContent = "Atur password akun";
@@ -991,6 +1004,7 @@
     }
     function lockApp() {
       authSession = null;
+      document.body.classList.remove("auth-checking");
       sharedStateReady = false;
       clearTimeout(syncTimer);
       clearInterval(refreshTimer);
@@ -1016,6 +1030,7 @@
     }
     function unlockApp(session) {
       authSession = session;
+      document.body.classList.remove("auth-checking");
       document.body.classList.remove("auth-locked");
       positionDeveloperWatermark();
       const username = session.user.user_metadata?.username || session.user.email || "Pengguna";
@@ -1173,6 +1188,7 @@
         render();
         refreshTimer = setInterval(refreshSharedState, 8000);
       } catch (error) {
+        document.body.classList.remove("auth-checking");
         showAuthMessage(databaseSetupHint(error));
         document.body.classList.add("auth-locked");
       } finally {
@@ -2540,6 +2556,7 @@
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (session && (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isPasswordSetupLink()))) showPasswordSetup(session);
       if (event === "SIGNED_OUT") {
+        document.body.classList.remove("auth-checking");
         const message = idleLogoutMessage;
         lockApp();
         pendingPasswordChange = null;
@@ -2554,14 +2571,18 @@
     });
     supabaseClient.auth.getSession().then(({ data, error }) => {
       if (error) {
+        document.body.classList.remove("auth-checking");
         showAuthMessage(`Gagal memeriksa sesi login: ${error.message}`);
         return;
       }
       if (data.session) {
         if (isPasswordSetupLink()) showPasswordSetup(data.session);
         else startAuthenticatedSession(data.session);
-      }
-    }).catch((error) => showAuthMessage(`Gagal menghubungi layanan login: ${error.message}`));
+      } else document.body.classList.remove("auth-checking");
+    }).catch((error) => {
+      document.body.classList.remove("auth-checking");
+      showAuthMessage(`Gagal menghubungi layanan login: ${error.message}`);
+    });
   </script>
 </body>
 </html>
