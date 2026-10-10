@@ -122,7 +122,7 @@
     }
     main { min-width: 0; padding: 32px clamp(20px, 4vw, 58px) 52px; }
     .topline { align-items: center; display: flex; justify-content: space-between; margin-bottom: 31px; }
-    .developer-watermark { background: rgba(255,255,255,.3); border: 1px solid rgba(111,125,114,.07); border-radius: 999px; color: rgba(116,125,116,.48); font-size: 10px; font-weight: 600; left: 254px; line-height: 1.4; opacity: .65; padding: 4px 9px; pointer-events: none; position: fixed; top: 8px; transition: left .22s ease; user-select: none; z-index: 10; }
+    .developer-watermark { background: rgba(255,255,255,.3); border: 1px solid rgba(111,125,114,.07); border-radius: 999px; bottom: 10px; color: rgba(116,125,116,.48); font-size: 10px; font-weight: 600; line-height: 1.4; opacity: .65; padding: 4px 9px; pointer-events: none; position: fixed; right: 14px; user-select: none; z-index: 10; }
     .crumb { color: var(--muted); font-size: 12px; }
     .crumb b { color: #434a40; font-weight: 600; }
     .top-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 2px; }
@@ -567,6 +567,7 @@
     }
     @media (max-width: 650px) {
       .app-shell { display: block; padding-bottom: 62px; }
+      .developer-watermark { bottom: 70px; right: 10px; }
       .sidebar { background: linear-gradient(100deg, #245b3d, #194a32); border-bottom: 1px solid #194a32; border-right: 0; bottom: 0; flex-direction: row; height: 61px; left: 0; padding: 5px 9px; position: fixed; right: 0; z-index: 5; }
       .brand, .nav-label, .sidebar-bottom { display: none; }
       .nav-list { display: flex; flex: 1; justify-content: space-around; }
@@ -1316,7 +1317,6 @@
       authSession = session;
       document.body.classList.remove("auth-checking");
       document.body.classList.remove("auth-locked");
-      positionDeveloperWatermark();
       const username = session.user.user_metadata?.username || session.user.email || "Pengguna";
       document.getElementById("profile-email").textContent = username;
       document.getElementById("profile-avatar").textContent = username.slice(0, 2).toLocaleUpperCase("id-ID");
@@ -3112,14 +3112,6 @@
     const appShell = document.querySelector(".app-shell");
     const sidebar = document.querySelector(".sidebar");
     const sidebarToggle = document.querySelector(".sidebar-toggle");
-    const developerWatermark = document.querySelector(".developer-watermark");
-    function positionDeveloperWatermark() {
-      const main = document.getElementById("main-content");
-      const mainStyle = getComputedStyle(main);
-      developerWatermark.style.left = `${Math.round(main.getBoundingClientRect().left + parseFloat(mainStyle.paddingLeft))}px`;
-    }
-    positionDeveloperWatermark();
-    window.addEventListener("resize", positionDeveloperWatermark);
     for (const eventName of ["pointerdown", "pointermove", "keydown", "scroll", "touchstart", "click"]) {
       document.addEventListener(eventName, recordUserActivity, { passive: true });
     }
@@ -3129,13 +3121,9 @@
     window.addEventListener("storage", (event) => {
       if (event.key === idleActivityStorageKey && event.newValue) checkIdleSession();
     });
-    appShell.addEventListener("transitionend", (event) => {
-      if (event.propertyName === "grid-template-columns") positionDeveloperWatermark();
-    });
     sidebarToggle.addEventListener("click", () => {
       const collapsed = appShell.classList.toggle("sidebar-collapsed");
       appShell.classList.remove("sidebar-expanded");
-      positionDeveloperWatermark();
       sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
       sidebarToggle.setAttribute("aria-label", collapsed ? "Lebarkan menu" : "Ciutkan menu");
       sidebarToggle.title = collapsed ? "Lebarkan menu" : "Ciutkan menu";
@@ -3144,12 +3132,10 @@
     sidebar.addEventListener("pointerenter", () => {
       if (appShell.classList.contains("sidebar-collapsed")) {
         appShell.classList.add("sidebar-expanded");
-        positionDeveloperWatermark();
       }
     });
     sidebar.addEventListener("pointerleave", () => {
       appShell.classList.remove("sidebar-expanded");
-      positionDeveloperWatermark();
     });
     document.querySelectorAll(".nav-item").forEach((item) => {
       const label = item.querySelector("span:last-child").textContent.trim();
