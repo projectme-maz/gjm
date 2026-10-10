@@ -440,8 +440,9 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
-    .about-intro { background: linear-gradient(120deg, #174b42, #217461); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; box-shadow: 0 12px 30px rgba(23, 83, 70, .14); color: #fff; margin-bottom: 22px; overflow: hidden; padding: clamp(22px, 4vw, 34px); position: relative; }
-    .about-intro::after { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.09); border-radius: 50%; content: ""; height: 230px; position: absolute; right: -74px; top: -116px; width: 230px; }
+    .about-intro { background: radial-gradient(circle at 96% 0%, rgba(255,255,255,.07) 0 115px, transparent 116px), linear-gradient(120deg, #174b42, #217461); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; box-shadow: 0 12px 30px rgba(23, 83, 70, .14); color: #fff; margin-bottom: 22px; min-height: 170px; overflow: visible; padding: clamp(22px, 4vw, 34px); position: relative; }
+    .about-intro-copy { max-width: min(72%, 700px); position: relative; z-index: 1; }
+    .about-character { bottom: 0; filter: drop-shadow(0 8px 12px rgba(9, 37, 31, .2)); height: 380px; object-fit: contain; pointer-events: none; position: absolute; right: clamp(28px, 10%, 135px); width: auto; z-index: 1; }
     .about-eyebrow { color: #c7e4d8; font-size: 10px; font-weight: 800; letter-spacing: 1.3px; margin-bottom: 9px; text-transform: uppercase; }
     .about-intro h2 { font-size: clamp(20px, 3vw, 27px); margin: 0; position: relative; z-index: 1; }
     .about-intro p { color: #e0eee8; font-size: 13px; margin: 9px 0 0; max-width: 690px; position: relative; z-index: 1; }
@@ -456,9 +457,15 @@
     .about-guide-card p { color: var(--muted); font-size: 11px; line-height: 1.65; margin: 0; }
     .about-guide-link { background: transparent; border: 0; color: var(--green); cursor: pointer; font: inherit; font-weight: 700; padding: 0; }
     .about-guide-link:hover { color: var(--green-dark); text-decoration: underline; }
+    @media (min-width: 651px) and (max-width: 900px) {
+      .about-intro-copy { max-width: calc(50% - 12px); }
+      .about-character { height: 300px; right: 20px; }
+    }
     @media (max-width: 650px) {
       .about-guide-grid { grid-template-columns: minmax(0, 1fr); }
-      .about-intro { border-radius: 12px; }
+      .about-intro { border-radius: 12px; min-height: 290px; padding-bottom: 22px; }
+      .about-intro-copy { max-width: calc(100% - 110px); }
+      .about-character { height: 230px; right: 12px; }
     }
     .theme-toggle { align-items: center; background: rgba(255,255,255,.76); border: 1px solid var(--line); border-radius: 7px; color: var(--ink); display: inline-flex; flex: 0 0 auto; font-size: 10px; font-weight: 700; gap: 5px; justify-content: center; min-height: 29px; padding: 4px 8px; transition: background .2s ease, border-color .2s ease, color .2s ease; }
     .theme-toggle:hover { background: #fff; border-color: #b8cfc6; }
@@ -1891,7 +1898,7 @@
     function renderAbout() {
       const guide = (step, icon, title, description, page, label) => `<article class="about-guide-card"><div class="about-guide-heading"><span class="about-guide-icon">${icon}</span><h3>${title}</h3><span class="about-guide-step">${step}</span></div><p>${description} <button class="about-guide-link" type="button" data-page-link="${page}">Buka ${label} →</button></p></article>`;
       return `${navMarkup()}<section class="page-head"><div><h1>Tentang Aplikasi</h1><p class="subtitle">Kenali alur kerja Stock Opname dan fungsi setiap menu.</p></div></section>
-        <section class="about-intro"><div class="about-eyebrow">Stock Opname · Rekonsiliasi Serial Number</div><h2>Kontrol stock opname dalam satu workspace.</h2><p>Aplikasi ini membantu tim mengelola master VEF, memindai serial number, dan mencocokkan hasil opname dengan data stok. Aktivitas tersimpan bersama agar dapat dipantau oleh seluruh tim.</p></section>
+        <section class="about-intro"><div class="about-intro-copy"><div class="about-eyebrow">Stock Opname · Rekonsiliasi Serial Number</div><h2>Kontrol stock opname dalam satu workspace.</h2><p>Aplikasi ini membantu tim mengelola master VEF, memindai serial number, dan mencocokkan hasil opname dengan data stok. Aktivitas tersimpan bersama agar dapat dipantau oleh seluruh tim.</p></div><img class="about-character" src="./assets/about-character.png" alt="Ilustrasi staf sedang memindai serial number laptop"></section>
         <h2 class="about-section-title">Panduan menggunakan workspace</h2>
         <section class="about-guide-grid" aria-label="Panduan setiap workspace">
           ${guide("Ringkasan", "▥", "Dashboard", "Pantau progres scan, jumlah laptop, sesi berjalan, dan sesi yang selesai. Pilih sesi pada tabel untuk langsung membuka workspace-nya.", "dashboard", "Dashboard")}
