@@ -203,7 +203,33 @@
     .layout-form { display: flex; gap: 7px; padding: 12px 14px; }
     .layout-form .scan-input { height: 36px; }
     .layout-form .button { min-height: 36px; padding: 0 10px; }
+    .layout-manual-form { align-items: start; display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) 82px auto; padding: 0 14px 12px; position: relative; }
+    .layout-manual-form .scan-input { height: 36px; }
+    .layout-manual-form .button { min-height: 36px; padding: 0 10px; }
+    .manual-product-picker { min-width: 0; }
+    .manual-product-picker > .scan-input { display: block; }
+    .manual-product-options { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; box-shadow: 0 10px 26px rgba(25, 55, 50, .16); display: none; left: 14px; max-height: 150px; overflow-y: auto; padding: 3px; position: absolute; right: 14px; top: calc(100% - 8px); z-index: 12; }
+    .manual-product-options.open { display: grid; gap: 2px; }
+    .manual-product-option { background: transparent; border: 0; border-radius: 4px; color: var(--ink); cursor: pointer; display: grid; gap: 2px; min-width: 0; padding: 6px 7px; text-align: left; width: 100%; }
+    .manual-product-option:hover, .manual-product-option:focus-visible { background: var(--green-soft); outline: 0; }
+    .manual-product-option-top { align-items: center; display: flex; gap: 8px; justify-content: space-between; min-width: 0; }
+    .manual-product-option-code { color: var(--green); flex: 0 0 auto; font: 700 10px/1.35 ui-monospace, Consolas, monospace; }
+    .manual-product-option-name { font-size: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .manual-product-option-meta { color: var(--muted); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .manual-product-options-empty { color: var(--muted); font-size: 10px; padding: 8px; }
+    .layout-card.manual-picker-open { overflow: visible; z-index: 5; }
     .layout-card-foot { border-top: 1px solid #eef0eb; color: var(--muted); font-size: 10px; padding: 10px 14px; }
+    .layout-record-group + .layout-record-group { border-top: 1px solid #eef0eb; margin-top: 9px; padding-top: 8px; }
+    .layout-record-heading { color: var(--ink); font-size: 10px; font-weight: 800; margin-bottom: 4px; }
+    .layout-record-empty { color: var(--muted); padding: 3px 0; }
+    .manual-item-details { border-bottom: 1px solid #f0f1ed; }
+    .manual-item-summary { align-items: center; cursor: pointer; display: grid; gap: 6px; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; min-height: 30px; list-style-position: inside; }
+    .manual-item-sku { color: var(--ink); font: 700 10px/1.4 ui-monospace, Consolas, monospace; white-space: nowrap; }
+    .manual-item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .manual-item-total { color: var(--ink); white-space: nowrap; }
+    .manual-item-expanded { padding: 2px 0 7px 17px; }
+    .manual-item-full-name { color: var(--ink); font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
+    .manual-item-entry { align-items: center; color: var(--muted); display: flex; font-size: 9px; justify-content: space-between; min-height: 24px; }
     .layout-scan-list { display: grid; gap: 4px; max-height: 230px; overflow-y: auto; }
     .layout-scan-row { align-items: center; border-bottom: 1px solid #f0f1ed; display: flex; gap: 8px; justify-content: space-between; min-height: 34px; padding: 3px 0; }
     .layout-scan-info { min-width: 0; overflow-wrap: anywhere; }
@@ -411,6 +437,8 @@
       .progress-copy { min-width: 108px; }
       .layout-grid { grid-template-columns: minmax(0, 1fr); }
       .layout-form { padding: 10px; }
+      .layout-manual-form { grid-template-columns: minmax(0, 1fr) 75px; padding: 0 10px 10px; }
+      .layout-manual-form .button { grid-column: 1 / -1; }
       .table-toolbar { align-items: flex-start; flex-direction: column; }
       .filters { width: 100%; }
       .search-wrap { flex: 1; }
@@ -544,6 +572,9 @@
     html[data-theme="dark"] .note-input,
     html[data-theme="dark"] .workspace-name-input,
     html[data-theme="dark"] .form-control { background: #14211f; border-color: #3a514b; color: var(--ink); }
+    html[data-theme="dark"] .manual-product-options { background: var(--paper); border-color: var(--line); }
+    html[data-theme="dark"] .manual-product-option:hover,
+    html[data-theme="dark"] .manual-product-option:focus-visible { background: #203b35; }
     html[data-theme="dark"] .auth-input:focus,
     html[data-theme="dark"] .scan-input:focus,
     html[data-theme="dark"] .search-input:focus,
@@ -559,6 +590,7 @@
     html[data-theme="dark"] .layout-card-head,
     html[data-theme="dark"] .layout-card-foot,
     html[data-theme="dark"] .layout-scan-row,
+    html[data-theme="dark"] .manual-item-details,
     html[data-theme="dark"] .completed-rack-scan { border-color: #304440; }
     html[data-theme="dark"] tbody tr:hover { background: #21332f; }
     html[data-theme="dark"] .workspace-row.current { background: #1d322d; }
@@ -739,9 +771,18 @@
       } : {})
     });
     const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
-    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
-    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
-    const snapshotWorkspaceData = (source) => ({ products: source.products || [], serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], historyEvents: source.historyEvents || [], workbookFiles: Array.isArray(source.workbookFiles) ? source.workbookFiles : [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts: source.layouts || [...DEFAULT_LAYOUTS], layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} });
+    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const snapshotWorkspaceData = (source) => {
+      const products = source.products || [];
+      const layouts = Array.isArray(source.layouts) && source.layouts.length ? source.layouts : [...DEFAULT_LAYOUTS];
+      const manualEntries = Array.isArray(source.manualEntries) ? source.manualEntries : products
+        .filter((product) => Number(product.box) > 0)
+        .map((product) => ({ id: crypto.randomUUID(), productId: product.id, sku: product.sku, name: product.name, layout: layouts[0], quantity: Number(product.box), createdAt: new Date().toISOString() }));
+      const boxTotals = new Map();
+      for (const entry of manualEntries) boxTotals.set(entry.productId, (boxTotals.get(entry.productId) || 0) + Number(entry.quantity || 0));
+      return { products: products.map((product) => ({ ...product, box: boxTotals.get(product.id) || 0 })), serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], manualEntries, historyEvents: source.historyEvents || [], workbookFiles: Array.isArray(source.workbookFiles) ? source.workbookFiles : [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts, layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} };
+    };
     const createWorkspace = (index, data = emptyWorkspaceData()) => ({ id: crypto.randomUUID(), name: `Sesi ${index}`, picNames: ["", ""], data });
     let state;
     try {
@@ -771,6 +812,7 @@
       if (!state.workspaces.some((workspace) => workspace.id === state.currentWorkspaceId)) state.currentWorkspaceId = state.workspaces[0].id;
       Object.assign(state, snapshotWorkspaceData(state.workspaces.find((workspace) => workspace.id === state.currentWorkspaceId).data));
     }
+    Object.assign(state, snapshotWorkspaceData(state));
     let currentPage = "opname";
     let selectedCompletedSessionId = "";
     let pendingCompletedSessionDeletionId = "";
@@ -987,6 +1029,7 @@
       if (!normalized.layoutQuantities || typeof normalized.layoutQuantities !== "object") normalized.layoutQuantities = {};
       if (!normalized.layoutNumbers || typeof normalized.layoutNumbers !== "object") normalized.layoutNumbers = {};
       if (!Array.isArray(normalized.scanEvents)) normalized.scanEvents = [];
+      if (!Array.isArray(source.manualEntries)) delete normalized.manualEntries;
       if (!Array.isArray(normalized.historyEvents)) normalized.historyEvents = [];
       if (!Array.isArray(normalized.sessions)) normalized.sessions = [];
       if (!Array.isArray(normalized.workbookFiles)) normalized.workbookFiles = [];
@@ -1008,6 +1051,7 @@
         Object.assign(normalized, snapshotWorkspaceData(normalized.workspaces.find((workspace) => workspace.id === normalized.currentWorkspaceId).data));
       }
       if (!normalized.activeSession || typeof normalized.activeSession !== "object") normalized.activeSession = makeSession();
+      Object.assign(normalized, snapshotWorkspaceData(normalized));
       return normalized;
     }
     function lockApp() {
@@ -1382,6 +1426,8 @@
       return Number.isFinite(number) ? number : 0;
     };
     const scannedFor = (productId) => state.scanEvents.filter((event) => event.status === "match" && event.productId === productId).length;
+    const manualQuantityFor = (productId) => state.manualEntries.filter((entry) => entry.productId === productId).reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
+    const syncManualBoxTotals = () => state.products.forEach((product) => { product.box = manualQuantityFor(product.id); });
     const reconciledQty = (product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0);
     const varianceFor = (product) => reconciledQty(product) - Number(product.stock || 0);
     const statusFor = (product) => {
@@ -1418,7 +1464,7 @@
         <td class="number-cell">${escapeHtml(product.warehouse || "-")}</td>
         <td class="number-cell">${formatNumber(product.stock)}</td>
         <td class="number-cell">${laptop ? formatNumber(product.count || 0) : "-"}</td>
-        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah Box ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="box" value="${Number(product.box || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
+        <td class="number-cell">${formatNumber(product.box || 0)}</td>
         <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
         <td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td>
         <td><span class="row-status ${status.className}">${status.label}</span></td>
@@ -1464,6 +1510,36 @@
         <section class="table-section"><div class="table-toolbar"><div class="table-title">Master barang <span class="table-count">${filtered.length} item · ${filtered.filter(isLaptopProduct).length} laptop · ${filtered.filter((product) => !isLaptopProduct(product)).length} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau SN" value="${escapeHtml(searchTerm)}" aria-label="Cari master"></div></div></div><div class="table-scroll"><table><thead><tr><th>Item code</th><th>Item name</th><th>Item Group</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>Serial Number</th></tr></thead><tbody>${filtered.length ? filtered.map((product) => { const serials = serialsByProduct.get(product.id) || []; const laptop = isLaptopProduct(product); return `<tr class="${laptop ? "" : "non-laptop-row"}"><td class="number-cell">${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div>${laptop ? "" : `<span class="row-status non-laptop">Bukan laptop</span>`}</td><td>${escapeHtml(product.itemGroup || "-")}</td><td>${escapeHtml(product.brand || "-")}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${serials.length ? `<details class="serial-details"><summary>${formatNumber(serials.length)} SN · tampilkan</summary><div class="serial-list">${serials.map((serial) => `<span class="serial-token">${escapeHtml(serial)}</span>`).join("")}</div></details>` : "-"}</td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="7">Unggah workbook untuk memuat master VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span>${state.serialMaster ? Object.keys(state.serialMaster).length : 0} serial terdaftar</span><span>${escapeHtml(state.importFile || "Belum ada workbook")}</span></div></section>`;
     }
 
+    function renderManualProductOptions(input) {
+      const picker = input.closest(".manual-product-picker");
+      const options = picker?.querySelector(".manual-product-options");
+      if (!options) return;
+      const query = normalizeField(input.value);
+      const matches = state.products.filter((product) => !query || normalizeField(`${product.sku} ${product.name} ${product.warehouse || ""} ${product.itemGroup || ""}`).includes(query)).slice(0, 8);
+      options.innerHTML = matches.length
+        ? matches.map((product) => `<button class="manual-product-option" type="button" role="option" data-manual-product-option="${escapeHtml(product.id)}"><span class="manual-product-option-top"><span class="manual-product-option-code">${escapeHtml(product.sku)}</span><span class="manual-product-option-name">${escapeHtml(product.name)}</span></span><span class="manual-product-option-meta">${escapeHtml(product.warehouse || "Tanpa warehouse")} · VEF ${formatNumber(product.stock || 0)}</span></button>`).join("")
+        : `<div class="manual-product-options-empty">Tidak ada item yang cocok dengan VEF Master.</div>`;
+      options.classList.add("open");
+      input.closest(".layout-card")?.classList.add("manual-picker-open");
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    function closeManualProductOptions(input) {
+      const options = input.closest(".manual-product-picker")?.querySelector(".manual-product-options");
+      options?.classList.remove("open");
+      input.closest(".layout-card")?.classList.remove("manual-picker-open");
+      input.setAttribute("aria-expanded", "false");
+    }
+
+    function selectManualProduct(input, productId) {
+      const product = state.products.find((item) => item.id === productId);
+      if (!product) return;
+      input.value = `${product.sku} — ${product.name}`;
+      input.dataset.selectedProductId = product.id;
+      closeManualProductOptions(input);
+      input.closest("[data-manual-form]")?.querySelector("[data-manual-quantity]")?.focus();
+    }
+
     function renderLayouts() {
       const active = state.activeSession.status === "active";
       const canEdit = canEditActiveSession();
@@ -1471,6 +1547,7 @@
         const rackName = rackLabel(layout);
         const rackNumber = state.layoutNumbers[layout] || "";
         const scans = state.scanEvents.filter((event) => event.layout === layout);
+        const manualEntries = state.manualEntries.filter((entry) => entry.layout === layout);
         const target = state.layoutQuantities[layout];
         const hasTarget = Number.isSafeInteger(target) && target >= 0;
         const hasRackNumber = Number.isSafeInteger(Number(rackNumber)) && Number(rackNumber) > 0;
@@ -1479,14 +1556,30 @@
         const issues = scans.length - matched - nonLaptopScans;
         const quantityStatus = getLayoutQuantityStatus(scans.length, target);
         const cardClasses = [
-          quantityStatus.className === "match" ? "quantity-matched" : "",
+          scans.length > 0 && quantityStatus.className === "match" ? "quantity-matched" : "",
           quantityStatus.className === "different" ? "quantity-over" : ""
         ].filter(Boolean).join(" ");
-        return `<section class="layout-card ${cardClasses}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active || !canEdit ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active || !canEdit ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${!state.products.length || !active || !canEdit || !hasTarget || !hasRackNumber ? "disabled" : ""}><button class="button button-primary" type="submit" ${!state.products.length || !active || !canEdit || !hasTarget || !hasRackNumber ? "disabled" : ""}>Catat</button></form><div class="layout-card-foot">${scans.length ? `<div class="layout-scan-list">${scans.slice().reverse().map((scan) => `<div class="layout-scan-row"><div class="layout-scan-info"><div class="layout-last-scan">${escapeHtml(scan.serial)}${scan.status === "duplicate" ? `<span class="scan-warning-icon" role="img" aria-label="Peringatan serial duplikat" title="Serial Number duplikat">!</span>` : ""}${scan.sku ? ` · ${escapeHtml(scan.sku)}` : ""}</div><div class="layout-scan-status ${scan.status}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan"}</div></div>${canEdit ? `<button class="layout-delete" type="button" data-delete-scan="${escapeHtml(scan.id)}" aria-label="Hapus scan ${escapeHtml(scan.serial)}" title="Hapus scan">×</button>` : ""}</div>`).join("")}</div>` : "Belum ada scan di rack ini."}</div></section>`;
+        const scanRows = scans.length ? scans.slice().reverse().map((scan) => `<div class="layout-scan-row"><div class="layout-scan-info"><div class="layout-last-scan">${escapeHtml(scan.serial)}${scan.status === "duplicate" ? `<span class="scan-warning-icon" role="img" aria-label="Peringatan serial duplikat" title="Serial Number duplikat">!</span>` : ""}${scan.sku ? ` · ${escapeHtml(scan.sku)}` : ""}</div><div class="layout-scan-status ${scan.status}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan"}</div></div>${canEdit ? `<button class="layout-delete" type="button" data-delete-scan="${escapeHtml(scan.id)}" aria-label="Hapus scan ${escapeHtml(scan.serial)}" title="Hapus scan">×</button>` : ""}</div>`).join("") : `<div class="layout-record-empty">Belum ada scan.</div>`;
+        const manualGroups = new Map();
+        for (const entry of manualEntries) {
+          const key = entry.productId || entry.sku;
+          if (!manualGroups.has(key)) manualGroups.set(key, []);
+          manualGroups.get(key).push(entry);
+        }
+        const manualRows = manualGroups.size ? [...manualGroups.values()].map((entries) => {
+          const product = state.products.find((item) => item.id === entries[0].productId);
+          const sku = product?.sku || entries[0].sku;
+          const name = product?.name || entries[0].name;
+          const total = entries.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
+          const entryRows = entries.slice().reverse().map((entry) => `<div class="manual-item-entry"><span>Qty ${formatNumber(entry.quantity)}${entry.createdAt ? ` · ${escapeHtml(formatDate(entry.createdAt, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }))}` : ""}</span>${canEdit ? `<button class="layout-delete" type="button" data-delete-manual="${escapeHtml(entry.id)}" aria-label="Hapus input manual ${escapeHtml(sku)} sebanyak ${formatNumber(entry.quantity)}" title="Hapus input manual">×</button>` : ""}</div>`).join("");
+          return `<details class="manual-item-details"><summary class="manual-item-summary"><span class="manual-item-sku">${escapeHtml(sku)}</span><span class="manual-item-name">${escapeHtml(name)}</span><strong class="manual-item-total">× ${formatNumber(total)}</strong></summary><div class="manual-item-expanded"><div class="manual-item-full-name">${escapeHtml(name)}</div>${entryRows}</div></details>`;
+        }).join("") : `<div class="layout-record-empty">Belum ada input manual.</div>`;
+        const scanDisabled = !state.products.length || !active || !canEdit || !hasTarget || !hasRackNumber;
+        const manualDisabled = !state.products.length || !active || !canEdit;
+        return `<section class="layout-card ${cardClasses}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active || !canEdit ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active || !canEdit ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${scanDisabled ? "disabled" : ""}><button class="button button-primary" type="submit" ${scanDisabled ? "disabled" : ""}>Catat Scan</button></form><form class="layout-manual-form" data-manual-form="${escapeHtml(layout)}"><div class="manual-product-picker"><input class="scan-input" type="search" data-manual-product placeholder="Cari item code atau nama barang" aria-label="Cari item dari VEF Master untuk ${escapeHtml(rackName)}" autocomplete="off" aria-autocomplete="list" aria-expanded="false" ${manualDisabled ? "disabled" : ""}><div class="manual-product-options" role="listbox" aria-label="Hasil pencarian VEF Master"></div></div><input class="scan-input" type="number" min="1" step="1" inputmode="numeric" data-manual-quantity placeholder="Qty" aria-label="Quantity manual untuk ${escapeHtml(rackName)}" ${manualDisabled ? "disabled" : ""}><button class="button button-secondary" type="submit" ${manualDisabled ? "disabled" : ""}>Catat Manual</button></form><div class="layout-card-foot"><div class="layout-record-group"><div class="layout-record-heading">Scan</div><div class="layout-scan-list">${scanRows}</div></div><div class="layout-record-group"><div class="layout-record-heading">Manual</div><div class="layout-scan-list">${manualRows}</div></div></div></section>`;
       }).join("");
       return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="category-chip">${state.layouts.length} Rack</span></section>${renderSessionAccessNotice()}${!state.products.length ? `<div class="history-summary"><strong>Master VEF belum dimuat.</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></div>` : ""}<section class="layout-grid">${cards}</section>`;
     }
-
     function getLayoutQuantityStatus(scanCount, target) {
       if (target === undefined || target === null || target === "") return { className: "pending", label: `Quantity belum diisi · ${scanCount} scan` };
       if (scanCount === target) return { className: "match", label: `Sesuai · ${scanCount}/${target} scan` };
@@ -1512,7 +1605,7 @@
         statusElement.textContent = status.label;
       }
       const card = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`)?.closest(".layout-card");
-      card?.classList.toggle("quantity-matched", status.className === "match");
+      card?.classList.toggle("quantity-matched", scanCount > 0 && status.className === "match");
       card?.classList.toggle("quantity-over", status.className === "different");
       const form = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`);
       const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
@@ -1645,7 +1738,7 @@
         const variance = reconciledQty(product) - Number(product.stock || 0);
         const laptop = isLaptopProduct(product);
         const status = laptop ? (variance === 0 ? { label: "Sesuai", className: "match" } : variance < 0 ? { label: "Kurang", className: "shortage" } : { label: "Lebih", className: "different" }) : { label: "Bukan laptop", className: "non-laptop" };
-        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${laptop ? formatNumber(product.box || 0) : "-"}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
       const recapProducts = products.filter((product) => isLaptopProduct(product) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
       const recapRows = recapProducts.map((product, index) => {
@@ -1686,6 +1779,19 @@
           scan.scannedAt ? formatDate(scan.scannedAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : ""
         ]);
       }
+      const manualRows = [["Rack", "Item Code", "Item Name", "Warehouse", "Quantity", "Waktu Input"]];
+      for (const entry of snapshot.manualEntries || []) {
+        const rackNumber = snapshot.layoutNumbers?.[entry.layout];
+        const product = (snapshot.products || []).find((item) => item.id === entry.productId);
+        manualRows.push([
+          rackNumber ? `Rack ${rackNumber}` : entry.layout,
+          entry.sku || product?.sku || "",
+          entry.name || product?.name || "",
+          product?.warehouse || "",
+          Number(entry.quantity || 0),
+          entry.createdAt ? formatDate(entry.createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : ""
+        ]);
+      }
       const resultRows = [["No", "Item Code", "Item Name", "Warehouse", "VEF", "SO", "BOX", "PJ", "Selisih", "Check", "Note"]];
       (snapshot.products || []).forEach((product, index) => {
         const laptop = isLaptopProduct(product);
@@ -1697,7 +1803,7 @@
           product.warehouse || "",
           Number(product.stock || 0),
           laptop ? Number(product.count || 0) : "",
-          laptop ? Number(product.box || 0) : "",
+          Number(product.box || 0),
           laptop ? Number(product.pj || 0) : "",
           laptop ? variance : "",
           laptop ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop",
@@ -1706,6 +1812,7 @@
       });
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(scanRows), "Scan Layout");
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(resultRows), "Result SO");
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(manualRows), "Input Manual");
       const safeName = String(session.workspaceName || "sesi-opname").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim() || "sesi-opname";
       const date = new Date(session.finishedAt).toISOString().slice(0, 10);
       try {
@@ -1751,7 +1858,7 @@
         const laptop = isLaptopProduct(product);
         const variance = reconciledQty(product) - Number(product.stock || 0);
         const status = laptop ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop";
-        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${laptop ? formatNumber(product.box || 0) : "-"}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `${variance > 0 ? "+" : ""}${formatNumber(variance)}` : "-"}</td><td>${status}</td><td>${escapeHtml(product.note || "-")}</td></tr>`;
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `${variance > 0 ? "+" : ""}${formatNumber(variance)}` : "-"}</td><td>${status}</td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
       const recapProducts = products.filter((product) => isLaptopProduct(product) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
       const recapRows = recapProducts.map((product, index) => {
@@ -2100,9 +2207,40 @@
         persist();
       }));
       document.querySelectorAll("[data-layout-form]").forEach((form) => form.addEventListener("submit", handleLayoutScanSubmit));
+      document.querySelectorAll("[data-manual-form]").forEach((form) => form.addEventListener("submit", handleManualEntrySubmit));
+      document.querySelectorAll("[data-manual-product]").forEach((input) => {
+        input.addEventListener("focus", () => renderManualProductOptions(input));
+        input.addEventListener("input", () => {
+          delete input.dataset.selectedProductId;
+          renderManualProductOptions(input);
+        });
+        input.addEventListener("blur", () => setTimeout(() => closeManualProductOptions(input), 120));
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeManualProductOptions(input);
+          if (event.key === "Enter" && input.dataset.selectedProductId) {
+            event.preventDefault();
+            input.closest("[data-manual-form]")?.querySelector("[data-manual-quantity]")?.focus();
+          } else if (event.key === "Enter") {
+            const firstOption = input.closest(".manual-product-picker")?.querySelector("[data-manual-product-option]");
+            if (firstOption) {
+              event.preventDefault();
+              selectManualProduct(input, firstOption.dataset.manualProductOption);
+            }
+          }
+        });
+        const options = input.closest(".manual-product-picker")?.querySelector(".manual-product-options");
+        options?.addEventListener("mousedown", (event) => {
+          if (event.target.closest("[data-manual-product-option]")) event.preventDefault();
+        });
+        options?.addEventListener("click", (event) => {
+          const option = event.target.closest("[data-manual-product-option]");
+          if (option) selectManualProduct(input, option.dataset.manualProductOption);
+        });
+      });
       document.querySelectorAll("[data-layout-quantity]").forEach((input) => bindAuditedInput(input, () => updateLayoutQuantity(input), "Quantity target Rack", (previous, current) => `${rackLabel(input.dataset.layoutQuantity)}: quantity target ${previous || "belum diisi"} → ${current || "dihapus"}.`));
       document.querySelectorAll("[data-layout-number]").forEach((input) => bindAuditedInput(input, () => updateLayoutNumber(input), "Nomor Rack", (previous, current) => `Nomor ${rackLabel(input.dataset.layoutNumber)} diubah: ${previous || "belum diisi"} → ${current || "dihapus"}.`));
       document.querySelectorAll("[data-delete-scan]").forEach((button) => button.addEventListener("click", () => deleteScanEvent(button.dataset.deleteScan)));
+      document.querySelectorAll("[data-delete-manual]").forEach((button) => button.addEventListener("click", () => deleteManualEntry(button.dataset.deleteManual)));
       document.querySelectorAll("[data-qty-id]").forEach((input) => bindAuditedInput(input, () => updateQuantity(input), "Jumlah item", (previous, current) => {
         const field = input.dataset.qtyField === "count" ? "SO" : input.dataset.qtyField.toUpperCase();
         const product = state.products.find((item) => item.id === input.dataset.qtyId);
@@ -2223,6 +2361,60 @@
       document.querySelector(`[data-layout-form="${CSS.escape(layout)}"] .layout-input`)?.focus();
     }
 
+    function handleManualEntrySubmit(event) {
+      event.preventDefault();
+      if (!requireActiveSessionEdit()) return;
+      const form = event.currentTarget;
+      const productInput = form.querySelector("[data-manual-product]");
+      const quantityInput = form.querySelector("[data-manual-quantity]");
+      const product = state.products.find((item) => item.id === productInput.dataset.selectedProductId);
+      if (!product) {
+        notify("Pilih item dari dropdown hasil pencarian VEF Master terlebih dahulu.");
+        productInput.focus();
+        return;
+      }
+      const quantity = Number(quantityInput.value);
+      if (!Number.isSafeInteger(quantity) || quantity < 1) {
+        notify("Quantity manual harus berupa bilangan bulat minimal 1.");
+        quantityInput.focus();
+        return;
+      }
+      if (!Number.isSafeInteger(manualQuantityFor(product.id) + quantity)) {
+        notify("Total BOX item ini melebihi batas quantity yang dapat disimpan.");
+        quantityInput.focus();
+        return;
+      }
+      const layout = form.dataset.manualForm;
+      state.manualEntries.push({
+        id: crypto.randomUUID(),
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        layout,
+        quantity,
+        createdAt: new Date().toISOString()
+      });
+      playScanBeep("match");
+      syncManualBoxTotals();
+      recordActivity("Input manual ditambahkan", `${product.sku} · ${product.name} sebanyak ${quantity} dicatat manual di ${rackLabel(layout)}.`);
+      persist();
+      render();
+      document.querySelector(`[data-manual-form="${CSS.escape(layout)}"] [data-manual-product]`)?.focus();
+      notify(`${product.sku} × ${formatNumber(quantity)} dicatat manual.`);
+    }
+
+    function deleteManualEntry(id) {
+      if (!requireActiveSessionEdit()) return;
+      const removed = state.manualEntries.find((entry) => entry.id === id);
+      if (!removed) return;
+      state.manualEntries = state.manualEntries.filter((entry) => entry.id !== id);
+      syncManualBoxTotals();
+      recordActivity("Input manual dihapus", `${removed.sku} sebanyak ${removed.quantity} dihapus dari ${rackLabel(removed.layout)}.`);
+      persist();
+      render();
+      notify(`Input manual ${removed.sku} di ${rackLabel(removed.layout)} dihapus.`);
+    }
+
     function deleteScanEvent(id) {
       if (!requireActiveSessionEdit()) return;
       const removed = state.scanEvents.find((event) => event.id === id);
@@ -2270,6 +2462,7 @@
         }
         for (const product of data.products || []) {
           product.count = (data.scanEvents || []).filter((event) => event.status === "match" && event.productId === product.id).length;
+          product.box = (data.manualEntries || []).filter((entry) => entry.productId === product.id).reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
         }
       }
       const current = state.workspaces.find((workspace) => workspace.id === state.currentWorkspaceId);
@@ -2298,7 +2491,7 @@
       if (typeof XLSX === "undefined") { notify("Parser Excel tidak termuat. Periksa koneksi internet lalu muat ulang aplikasi."); return; }
       if (!/\.(xlsx|xls)$/i.test(file.name)) { notify("Pilih file Excel berformat .xlsx atau .xls."); return; }
       if (file.size > 50 * 1024 * 1024) { notify("Ukuran file Excel melebihi batas arsip 50 MB."); return; }
-      if (state.products.length && state.scanEvents.length && !window.confirm("Workbook baru akan mengganti data sesi yang sedang berjalan. Lanjutkan?")) return;
+      if (state.products.length && (state.scanEvents.length || state.manualEntries.length) && !window.confirm("Workbook baru akan mengganti data sesi yang sedang berjalan. Lanjutkan?")) return;
       try {
         const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
         const sheetNames = workbook.SheetNames.map((name) => name.toLocaleLowerCase("id-ID"));
@@ -2381,6 +2574,7 @@
           state.products = [];
           state.serialMaster = {};
           state.scanEvents = [];
+          state.manualEntries = [];
           state.layouts = importedLayouts;
           state.layoutQuantities = {};
           state.layoutNumbers = {};
@@ -2398,6 +2592,7 @@
         state.products = [...productsByCode.values()].sort((a, b) => a.sku.localeCompare(b.sku, "id-ID"));
         state.serialMaster = serialMaster;
         state.scanEvents = [];
+        state.manualEntries = [];
         state.layouts = importedLayouts;
         state.layoutQuantities = {};
         state.layoutNumbers = {};
@@ -2432,6 +2627,7 @@
       const snapshot = JSON.parse(JSON.stringify({
         products: state.products,
         scanEvents: state.scanEvents,
+        manualEntries: state.manualEntries,
         layouts: state.layouts,
         layoutQuantities: state.layoutQuantities,
         layoutNumbers: state.layoutNumbers
@@ -2451,6 +2647,7 @@
       recordActivity("Sesi baru", "Sesi opname baru dimulai; quantity SO, BOX, dan PJ direset.");
       state.activeSession = makeSession(authSession?.user || null);
       state.scanEvents = [];
+      state.manualEntries = [];
       state.layoutQuantities = {};
       state.lastScan = null;
       state.products.forEach((product) => { product.count = 0; product.box = 0; product.pj = 0; });
@@ -2472,6 +2669,7 @@
       state.products = [];
       state.serialMaster = {};
       state.scanEvents = [];
+      state.manualEntries = [];
       const removedPaths = new Set(currentSessionWorkbooks.map((workbook) => workbook.storagePath));
       state.workbookFiles = (state.workbookFiles || []).filter((workbook) => !removedPaths.has(workbook.storagePath));
       state.lastScan = null;
@@ -2493,7 +2691,7 @@
       const header = ["Item Code", "Item Name", "Item Group", "Brand", "Warehouse", "Jenis", "VEF", "SO", "BOX", "PJ", "Selisih", "Check"];
       const rows = state.products.map((product) => {
         const laptop = isLaptopProduct(product);
-        return [product.sku, product.name, product.itemGroup || "", product.brand, product.warehouse, laptop ? "Laptop" : "Bukan laptop", product.stock, laptop ? product.count || 0 : "", laptop ? product.box || 0 : "", laptop ? product.pj || 0 : "", laptop ? varianceFor(product) : "", laptop ? statusFor(product).label : "Bukan laptop"];
+        return [product.sku, product.name, product.itemGroup || "", product.brand, product.warehouse, laptop ? "Laptop" : "Bukan laptop", product.stock, laptop ? product.count || 0 : "", product.box || 0, laptop ? product.pj || 0 : "", laptop ? varianceFor(product) : "", laptop ? statusFor(product).label : "Bukan laptop"];
       });
       const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\r\n");
       const link = document.createElement("a");
