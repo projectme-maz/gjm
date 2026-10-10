@@ -68,6 +68,9 @@
     .top-logout:hover { background: #f2f7f1; border-color: #cbd9ca; }
     .auth-screen { align-items: center; background: radial-gradient(ellipse at 82% 10%, rgba(218,237,216,.5), transparent 35%), var(--canvas); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 20; }
     .auth-card { animation: dashboard-enter .28s ease both; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 22px 70px rgba(29,53,36,.13); max-width: 420px; padding: 32px; width: 100%; }
+    @media (min-width: 851px) {
+      .auth-screen { justify-content: flex-start; padding-left: clamp(32px, 8vw, 120px); padding-right: 32px; }
+    }
     .auth-brand { align-items: center; display: flex; gap: 12px; margin-bottom: 25px; }
     .auth-brand .brand-mark { flex: 0 0 44px; height: 44px; width: 44px; }
     .auth-brand .brand-name { color: var(--ink); font-size: 16px; }
