@@ -48,7 +48,10 @@
     .nav-item[hidden], .nav-list[hidden] { display: none !important; }
     .nav-item:hover { background: rgba(255,255,255,.1); color: #fff; transform: translateX(2px); }
     .nav-item.active { background: linear-gradient(100deg, #d9efcf, #eff8e9); box-shadow: inset 3px 0 var(--lime); color: #194a32; font-weight: 700; }
-    .nav-icon { align-items: center; color: inherit; display: inline-flex; font-size: 16px; justify-content: center; width: 18px; }
+    .nav-icon { align-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); border-radius: 9px; color: inherit; display: inline-flex; flex: 0 0 30px; height: 30px; justify-content: center; transition: background .16s ease, border-color .16s ease, color .16s ease; width: 30px; }
+    .nav-icon svg { height: 17px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; width: 17px; }
+    .nav-item:hover .nav-icon { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.2); }
+    .nav-item.active .nav-icon { background: linear-gradient(145deg, #347a51, #194a32); border-color: rgba(25,74,50,.12); box-shadow: 0 3px 8px rgba(15,48,29,.18), inset 0 1px rgba(255,255,255,.14); color: #d7ef9c; }
     .sidebar-bottom { border-top: 1px solid rgba(255,255,255,.2); margin-top: auto; padding: 17px 9px 0; }
     .profile { align-items: center; display: flex; gap: 10px; }
     .profile-details { min-width: 0; }
@@ -392,14 +395,16 @@
     .schedule-summary-chevron { color: var(--muted); flex: 0 0 auto; font-size: 16px; transition: transform .18s ease; }
     .schedule-card[open] > .schedule-card-summary { border-bottom: 1px solid #edf1eb; }
     .schedule-card[open] > .schedule-card-summary { background: #e8f4ec; border-bottom-color: #c9dfd0; color: #164b3a; }
-    .schedule-card[open] > .schedule-card-summary .schedule-card-number,
     .schedule-card[open] > .schedule-card-summary .schedule-summary-meta,
     .schedule-card[open] > .schedule-card-summary .schedule-summary-badges,
     .schedule-card[open] > .schedule-card-summary .schedule-summary-chevron { display: none; }
+    .schedule-card[open] > .schedule-card-head .schedule-card-number { display: none; }
     .schedule-card[open] > .schedule-card-summary .schedule-summary-title { color: #164b3a; font-size: 13px; font-weight: 800; letter-spacing: .35px; text-transform: uppercase; }
     .schedule-card[open] > .schedule-card-summary .schedule-summary-chevron { transform: rotate(180deg); }
     .schedule-card-head { align-items: center; border-bottom: 1px solid #edf1eb; display: flex; gap: 11px; padding: 14px 15px; }
-    .schedule-card-number { align-items: center; background: #eaf3ed; border: 1px solid #dcebe0; border-radius: 9px; color: var(--green); display: inline-flex; flex: 0 0 37px; font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 13px; font-weight: 700; height: 37px; justify-content: center; }
+    .schedule-card-number { align-items: center; background: linear-gradient(145deg, #f0f7f2, #e4f0e8); border: 1px solid #d7e7dc; border-radius: 11px; color: #28724f; display: inline-flex; flex: 0 0 40px; height: 40px; justify-content: center; position: relative; }
+    .schedule-card-number svg { height: 21px; width: 21px; }
+    .schedule-card-number small { align-items: center; background: #27694f; border: 2px solid var(--paper); border-radius: 99px; bottom: -5px; color: #fff; display: flex; font: 700 8px/1 "Space Grotesk", "Segoe UI", sans-serif; height: 16px; justify-content: center; min-width: 16px; padding: 0 2px; position: absolute; right: -5px; }
     .schedule-card-title { flex: 1; min-width: 0; }
     .schedule-card-title .workspace-name-input { font-size: 13px; max-width: none; }
     .schedule-card-subtitle { color: var(--muted); font-size: 10px; margin-top: 3px; }
@@ -548,7 +553,8 @@
       .brand, .nav-label, .sidebar-bottom { display: none; }
       .nav-list { display: flex; flex: 1; justify-content: space-around; }
       .nav-item { align-items: center; border-radius: 5px; flex-direction: column; font-size: 9px; gap: 2px; justify-content: center; min-height: 50px; padding: 3px; }
-      .nav-icon { font-size: 15px; }
+      .nav-icon { flex-basis: 27px; height: 27px; width: 27px; }
+      .nav-icon svg { height: 15px; width: 15px; }
       main { padding: 20px 14px 30px; }
       .topline { margin-bottom: 22px; }
       .today { display: none; }
@@ -755,7 +761,8 @@
     html[data-theme="dark"] .schedule-card[open] > .schedule-card-summary .schedule-summary-title { color: #d9f1e4; }
     html[data-theme="dark"] .schedule-mode-box { background: linear-gradient(110deg, #203832, #1d302b); border-color: #304b40; }
     html[data-theme="dark"] .schedule-stat { background: #1d2e2a; border-color: #304440; }
-    html[data-theme="dark"] .schedule-card-number { background: #203a34; border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .schedule-card-number { background: linear-gradient(145deg, #203a34, #1d322d); border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .schedule-card-number small { background: #78b79b; border-color: var(--paper); color: #142520; }
     html[data-theme="dark"] .schedule-current-badge { background: #203a34; color: #a9dec9; }
     html[data-theme="dark"] .schedule-overview { background: linear-gradient(118deg, #14372f, #1a5243 68%, #28654d); }
     html[data-theme="dark"] .schedule-mode-title { color: var(--ink); }
@@ -857,23 +864,23 @@
       </div>
       <div class="nav-label">Workspace</div>
       <nav class="nav-list" aria-label="Navigasi utama">
-        <button class="nav-item" data-page="dashboard"><span class="nav-icon">▥</span><span>Dashboard</span></button>
-        <button class="nav-item" data-page="workspaces"><span class="nav-icon">▦</span><span>Jadwal</span></button>
-        <button class="nav-item" data-page="products"><span class="nav-icon">▤</span><span>Master VEF</span></button>
-        <button class="nav-item" data-page="layouts"><span class="nav-icon">▦</span><span>Scan Layout</span></button>
-        <button class="nav-item active" data-page="opname"><span class="nav-icon">⌗</span><span>Result SO</span></button>
-        <button class="nav-item" data-page="recap"><span class="nav-icon">↕</span><span>Rekap Selisih</span></button>
+        <button class="nav-item" data-page="dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-6m4 6V4"/></svg></span><span>Dashboard</span></button>
+        <button class="nav-item" data-page="workspaces"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-11 4h2m3 0h2m-7 3h2"/></svg></span><span>Jadwal</span></button>
+        <button class="nav-item" data-page="products"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7M12 11v10m-4-12 8-4"/></svg></span><span>Master VEF</span></button>
+        <button class="nav-item" data-page="layouts"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5v14m3-11v8m3-10v12m3-9v6m3-10v14m3-11v8m2-11v14"/></svg></span><span>Scan Layout</span></button>
+        <button class="nav-item active" data-page="opname"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4H5a2 2 0 0 0-2 2v2m14-4h2a2 2 0 0 1 2 2v2M3 16v2a2 2 0 0 0 2 2h2m14-4v2a2 2 0 0 1-2 2h-2M7 12l3 3 7-7"/></svg></span><span>Result SO</span></button>
+        <button class="nav-item" data-page="recap"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7h13m0 0-3-3m3 3-3 3M17 17H4m0 0 3-3m-3 3 3 3m5-8 2-2 2 2"/></svg></span><span>Rekap Selisih</span></button>
       </nav>
       <div class="nav-label">Arsip</div>
       <nav class="nav-list" aria-label="Arsip stock opname">
-        <button class="nav-item" data-page="history"><span class="nav-icon">◷</span><span>Riwayat Perubahan</span></button>
-        <button class="nav-item" data-page="completed-sessions"><span class="nav-icon">▣</span><span>Sesi Stock Opname</span></button>
+        <button class="nav-item" data-page="history"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Riwayat Perubahan</span></button>
+        <button class="nav-item" data-page="completed-sessions"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2Z"/><path d="M8 4V2h8v2m-8 7 2.5 2.5L16 8"/></svg></span><span>Sesi Stock Opname</span></button>
       </nav>
       <nav class="nav-list" aria-label="Bantuan" style="margin-top: 18px">
-        <button class="nav-item" data-page="about"><span class="nav-icon">ⓘ</span><span>About</span></button>
+        <button class="nav-item" data-page="about"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg></span><span>About</span></button>
       </nav>
       <nav class="nav-list" id="admin-navigation" aria-label="Administrasi" style="margin-top: 18px" hidden>
-        <button class="nav-item" data-page="admin-users" id="admin-users-nav" hidden><span class="nav-icon">♙</span><span>Kelola Akun</span></button>
+        <button class="nav-item" data-page="admin-users" id="admin-users-nav" hidden><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3Zm14-11a3 3 0 0 1 0 6m2 2a4 4 0 0 1 2 3v1h-4"/></svg></span><span>Kelola Akun</span></button>
       </nav>
       <div class="sidebar-bottom">
         <div class="profile"><div class="avatar" id="profile-avatar">AD</div><div class="profile-details"><div class="profile-name" id="profile-name">Tim Gudang</div><div class="profile-role" id="profile-role"></div><div class="profile-email" id="profile-email"></div></div><button class="logout-button" id="logout-button" type="button">Keluar</button></div>
@@ -2192,13 +2199,13 @@
           : "";
         return `<details class="schedule-card ${isCurrent ? "current" : ""}">
           <summary class="schedule-card-summary" aria-label="Sesi ${index + 1}, ${escapeHtml(workspace.name || `Sesi ${index + 1}`)}, ${status}. Klik untuk melihat detail.">
-            <span class="schedule-card-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+            <span class="schedule-card-number" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect x="4" y="5.5" width="16" height="15" rx="2.2"/><path d="M8 3.5v4m8-4v4M4 10h16m-10 5 1.5 1.5L15 13"/></svg><small>${String(index + 1).padStart(2, "0")}</small></span>
             <span class="schedule-summary-copy"><strong class="schedule-summary-title">${escapeHtml(workspace.name || `Sesi ${index + 1}`)}</strong><span class="schedule-summary-meta">${countModeLabel(countMode)} · ${formatNumber(stats.countedSkus)} item · ${formatNumber(serials)} SN · ${summaryPicNames}</span></span>
             <span class="schedule-summary-badges"><span class="row-status ${statusClass}">${status}</span>${isCurrent ? '<span class="schedule-current-badge">Sedang dipilih</span>' : ""}</span>
             <span class="schedule-summary-chevron" aria-hidden="true">⌄</span>
           </summary>
           <header class="schedule-card-head">
-            <span class="schedule-card-number" aria-label="Sesi ${index + 1}">${String(index + 1).padStart(2, "0")}</span>
+            <span class="schedule-card-number" aria-label="Sesi ${index + 1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" aria-hidden="true"><rect x="4" y="5.5" width="16" height="15" rx="2.2"/><path d="M8 3.5v4m8-4v4M4 10h16m-10 5 1.5 1.5L15 13"/></svg><small aria-hidden="true">${String(index + 1).padStart(2, "0")}</small></span>
             <div class="schedule-card-title">
               <input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand sesi ${index + 1}" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}>
               <div class="schedule-card-subtitle">Sesi ${String(index + 1).padStart(2, "0")} · ${formatNumber(stats.countedSkus)} item masuk perhitungan</div>
