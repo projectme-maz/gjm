@@ -714,7 +714,7 @@
   </dialog>
   <dialog id="delete-master-dialog">
     <div class="dialog-head"><div><div class="dialog-title">Hapus semua data master VEF?</div><div class="dialog-subtitle">Tindakan ini tidak dapat dibatalkan.</div></div><button class="dialog-close" type="button" data-close="delete-master-dialog" aria-label="Tutup">×</button></div>
-    <div class="confirm-body">Semua item, Serial Number, hasil scan, jumlah BOX/PJ, dan catatan sesi aktif akan dihapus dari perangkat ini. <strong>Riwayat opname yang sudah selesai tetap disimpan.</strong></div>
+    <div class="confirm-body">Semua item, Serial Number, hasil scan, jumlah BOX/PJ, dan catatan sesi aktif akan dihapus dari workspace bersama. <strong>Riwayat opname yang sudah selesai tetap disimpan.</strong></div>
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-master-dialog">Batal</button><button class="button button-danger" id="confirm-delete-master" type="button">Hapus semua data</button></div>
   </dialog>
   <dialog id="delete-completed-session-dialog">
@@ -2678,7 +2678,7 @@
       state.layouts = [...DEFAULT_LAYOUTS];
       state.layoutQuantities = {};
       state.layoutNumbers = {};
-      state.activeSession = makeSession();
+      state.activeSession = makeSession(authSession?.user || null);
       persist();
       document.getElementById("delete-master-dialog").close();
       currentPage = "products";
