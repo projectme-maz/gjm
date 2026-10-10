@@ -323,6 +323,8 @@
     .workspace-name-input { background: #fff; border: 1px solid #dfe3db; border-radius: 5px; font-size: 11px; font-weight: 700; height: 33px; max-width: 210px; outline: 0; padding: 0 8px; width: 100%; }
     .workspace-pic-fields { display: grid; gap: 5px; min-width: 145px; }
     .workspace-pic-fields .workspace-name-input { font-weight: 500; }
+    .workspace-count-mode { background: #fff; border: 1px solid #dfe3db; border-radius: 5px; font: 600 11px "Segoe UI",sans-serif; height: 33px; max-width: 180px; padding: 0 7px; width: 100%; }
+    .workspace-count-mode:focus { border-color: #739b7c; outline: 2px solid rgba(40,93,69,.09); }
     .workspace-name-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
     .workspace-row.current { background: #f6faf5; }
     .workspace-actions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -771,8 +773,8 @@
       } : {})
     });
     const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
-    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
-    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), countMode: "laptops", importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
+    const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), countMode: "laptops", importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
     const snapshotWorkspaceData = (source) => {
       const products = source.products || [];
       const layouts = Array.isArray(source.layouts) && source.layouts.length ? source.layouts : [...DEFAULT_LAYOUTS];
@@ -781,7 +783,7 @@
         .map((product) => ({ id: crypto.randomUUID(), productId: product.id, sku: product.sku, name: product.name, layout: layouts[0], quantity: Number(product.box), createdAt: new Date().toISOString() }));
       const boxTotals = new Map();
       for (const entry of manualEntries) boxTotals.set(entry.productId, (boxTotals.get(entry.productId) || 0) + Number(entry.quantity || 0));
-      return { products: products.map((product) => ({ ...product, box: boxTotals.get(product.id) || 0 })), serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], manualEntries, historyEvents: source.historyEvents || [], workbookFiles: Array.isArray(source.workbookFiles) ? source.workbookFiles : [], activeSession: source.activeSession || makeSession(), importFile: source.importFile || "", importMessage: source.importMessage || "", layouts, layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} };
+      return { products: products.map((product) => ({ ...product, box: boxTotals.get(product.id) || 0 })), serialMaster: source.serialMaster || {}, scanEvents: source.scanEvents || [], manualEntries, historyEvents: source.historyEvents || [], workbookFiles: Array.isArray(source.workbookFiles) ? source.workbookFiles : [], activeSession: source.activeSession || makeSession(), countMode: source.countMode === "all" ? "all" : "laptops", importFile: source.importFile || "", importMessage: source.importMessage || "", layouts, layoutQuantities: source.layoutQuantities || {}, layoutNumbers: source.layoutNumbers || {} };
     };
     const createWorkspace = (index, data = emptyWorkspaceData()) => ({ id: crypto.randomUUID(), name: `Sesi ${index}`, picNames: ["", ""], data });
     let state;
@@ -806,6 +808,7 @@
         if (!workspace.id) workspace.id = crypto.randomUUID();
         if (typeof workspace.name !== "string") workspace.name = `Sesi ${index + 1}`;
         if (!workspace.data) workspace.data = emptyWorkspaceData();
+        if (workspace.data.countMode !== "all") workspace.data.countMode = "laptops";
         if (!Array.isArray(workspace.picNames)) workspace.picNames = ["", ""];
         workspace.picNames = [workspace.picNames[0] || "", workspace.picNames[1] || ""];
       });
@@ -1418,6 +1421,8 @@
       if (/\b(mouse|keyboard|headset|earbuds|earphone|phone|cooling case|screen protector|xbox ally|accessor(?:y|ies))\b/i.test(name)) return false;
       return /\b(laptop|notebook|vivobook|zenbook|expertbook)\b|\brog\s+(?:zephyrus|strix|flow|scar)\b|\btuf\b|\bgaming\s+v\d/i.test(name);
     };
+    const isCountedProduct = (product, countMode = state.countMode) => countMode === "all" || isLaptopProduct(product);
+    const countModeLabel = (countMode) => countMode === "all" ? "Semua item" : "Laptop saja";
     const normalizeSerial = (value) => String(value ?? "").trim().toLocaleUpperCase("id-ID");
     const parseQuantity = (value) => {
       if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -1430,22 +1435,41 @@
     const syncManualBoxTotals = () => state.products.forEach((product) => { product.box = manualQuantityFor(product.id); });
     const reconciledQty = (product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0);
     const varianceFor = (product) => reconciledQty(product) - Number(product.stock || 0);
-    const statusFor = (product) => {
-      if (!isLaptopProduct(product)) return { label: "Bukan laptop", className: "non-laptop" };
+    function reclassifyScanEvents(scanEvents, serialMaster, countMode) {
+      const seen = new Set();
+      for (const event of scanEvents) {
+        const key = normalizeSerial(event.serial);
+        const master = serialMaster?.[key];
+        event.serialKey = key;
+        event.productId = master?.productId || "";
+        event.sku = master?.sku || "";
+        event.name = master?.name || "";
+        event.itemGroup = master?.itemGroup || "";
+        if (!master) event.status = "not-found";
+        else if (!isCountedProduct(master, countMode)) event.status = "non-laptop";
+        else if (seen.has(key)) event.status = "duplicate";
+        else {
+          event.status = "match";
+          seen.add(key);
+        }
+      }
+    }
+    const statusFor = (product, countMode = state.countMode) => {
+      if (!isCountedProduct(product, countMode)) return { label: "Bukan laptop", className: "non-laptop" };
       const variance = varianceFor(product);
       if (variance === 0) return { label: "Sesuai", className: "match" };
       if (variance < 0) return { label: "Kurang", className: "shortage" };
       return { label: "Lebih", className: "different" };
     };
     const getStats = () => {
-      const laptops = state.products.filter(isLaptopProduct);
-      const matching = laptops.filter((product) => varianceFor(product) === 0).length;
-      const shortages = laptops.filter((product) => varianceFor(product) < 0).length;
-      const surpluses = laptops.filter((product) => varianceFor(product) > 0).length;
+      const counted = state.products.filter((product) => isCountedProduct(product));
+      const matching = counted.filter((product) => varianceFor(product) === 0).length;
+      const shortages = counted.filter((product) => varianceFor(product) < 0).length;
+      const surpluses = counted.filter((product) => varianceFor(product) > 0).length;
       const scanned = state.scanEvents.filter((event) => event.status === "match").length;
       const issues = state.scanEvents.filter((event) => event.status === "duplicate" || event.status === "not-found").length;
       const nonLaptopScans = state.scanEvents.filter((event) => event.status === "non-laptop").length;
-      return { total: laptops.length, nonLaptop: state.products.length - laptops.length, expected: laptops.reduce((sum, product) => sum + Number(product.stock || 0), 0), scanned, matching, shortages, surpluses, issues, nonLaptopScans, percent: laptops.length ? Math.round(matching / laptops.length * 100) : 0 };
+      return { total: counted.length, nonLaptop: state.products.length - counted.length, expected: counted.reduce((sum, product) => sum + Number(product.stock || 0), 0), scanned, matching, shortages, surpluses, issues, nonLaptopScans, countMode: state.countMode, percent: counted.length ? Math.round(matching / counted.length * 100) : 0 };
     };
     const navMarkup = () => {
       const pics = activeWorkspace()?.picNames || [];
@@ -1454,19 +1478,19 @@
       return `<div class="topline"><div class="crumb">${escapeHtml(activeWorkspaceName())} <span> / </span> <b>${currentPage === "dashboard" ? "Dashboard" : currentPage === "opname" ? "Result SO" : currentPage === "layouts" ? "Scan Layout" : currentPage === "workspaces" ? "Jadwal" : currentPage === "products" ? "Master VEF" : currentPage === "recap" ? "Rekap selisih" : currentPage === "completed-sessions" ? "Sesi Stock Opname" : currentPage === "admin-users" ? "Kelola Akun" : currentPage === "about" ? "About" : "Riwayat Perubahan"}</b></div><div class="top-actions"><span class="today">${formatDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>${picMarkup}<button class="theme-toggle" type="button" data-theme-toggle aria-label="Aktifkan dark mode" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-label">Dark</span></button></div></div>`;
     };
     const productRows = (products) => products.length ? products.map((product, index) => {
-      const laptop = isLaptopProduct(product);
-      const status = laptop ? statusFor(product) : { label: "Bukan laptop", className: "non-laptop" };
-      const variance = laptop ? varianceFor(product) : null;
-      return `<tr class="${laptop ? "" : "non-laptop-row"}">
+      const included = isCountedProduct(product);
+      const status = included ? statusFor(product) : { label: "Bukan laptop", className: "non-laptop" };
+      const variance = included ? varianceFor(product) : null;
+      return `<tr class="${included ? "" : "non-laptop-row"}">
         <td class="number-cell">${index + 1}</td>
         <td><div class="product-cell"><div><div class="product-name">${escapeHtml(product.name)}</div><div class="product-sku">${escapeHtml(product.sku)}</div></div></div></td>
         <td><span class="category-chip">${escapeHtml(product.brand || "-")}</span></td>
         <td class="number-cell">${escapeHtml(product.warehouse || "-")}</td>
         <td class="number-cell">${formatNumber(product.stock)}</td>
-        <td class="number-cell">${laptop ? formatNumber(product.count || 0) : "-"}</td>
+        <td class="number-cell">${included ? formatNumber(product.count || 0) : "-"}</td>
         <td class="number-cell">${formatNumber(product.box || 0)}</td>
-        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
-        <td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td>
+        <td>${included ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
+        <td>${included ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td>
         <td><span class="row-status ${status.className}">${status.label}</span></td>
       </tr>`;
     }).join("") : `<tr><td class="empty-row" colspan="10">${state.importFile ? "Template terbaca, tetapi tab VEF Master belum berisi Serial No dan Item Code." : "Belum ada data VEF. Unggah workbook stock opname untuk memulai."}</td></tr>`;
@@ -1481,16 +1505,16 @@
       });
       const latestScans = [...state.scanEvents].slice(-8).reverse();
       return `${navMarkup()}
-        <section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Result SO · Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ.</p></div><div class="head-buttons"><button class="button button-secondary" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
+        <section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Result SO · Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ. Perhitungan: ${countModeLabel(state.countMode).toLocaleLowerCase("id-ID")}.</p></div><div class="head-buttons"><button class="button button-secondary" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
         ${renderSessionAccessNotice()}
         <section class="session-strip"><div class="session-info"><div class="session-kicker">Sesi opname · ${escapeHtml(formatDate(state.activeSession.startedAt, { day: "numeric", month: "short", year: "numeric" }))}</div><div class="session-title">${active ? "Rekonsiliasi sedang berjalan" : "Rekonsiliasi selesai"}</div><div class="session-meta">${state.importFile ? `${escapeHtml(state.importFile)}${state.importMessage ? ` · ${escapeHtml(state.importMessage)}` : ""}` : "Unggah workbook di Master VEF untuk memulai sesi."} · Pemilik: ${escapeHtml(sessionOwnerName(state.activeSession))}</div></div><div class="session-actions"><span class="status-pill"><span class="status-dot" style="${active ? "" : "background:#fff"}"></span>${active ? "Sedang berjalan" : "Selesai"}</span>${active ? `<button class="button" id="finish-button" ${!canEdit || !stats.total ? "disabled" : ""}>Selesaikan opname <span>→</span></button>` : `<button class="button" id="new-session-button" ${!canEdit ? "disabled" : ""}><span class="icon-plus">+</span> Mulai sesi baru</button>`}</div></section>
         <section class="metric-grid" aria-label="Ringkasan stock opname">
-          <div class="metric"><div class="metric-top">Laptop dihitung <span class="metric-mark">▤</span></div><div class="metric-value" id="metric-skus">${stats.total} <small>SKU</small></div></div>
-          <div class="metric"><div class="metric-top">Unit laptop VEF <span class="metric-mark">#</span></div><div class="metric-value" id="metric-expected">${formatNumber(stats.expected)} <small>unit</small></div></div>
+          <div class="metric"><div class="metric-top">${state.countMode === "all" ? "Semua item dihitung" : "Laptop dihitung"} <span class="metric-mark">▤</span></div><div class="metric-value" id="metric-skus">${stats.total} <small>SKU</small></div></div>
+          <div class="metric"><div class="metric-top">Unit VEF dihitung <span class="metric-mark">#</span></div><div class="metric-value" id="metric-expected">${formatNumber(stats.expected)} <small>unit</small></div></div>
           <div class="metric"><div class="metric-top">SN cocok dipindai <span class="metric-mark">✓</span></div><div class="metric-value" id="metric-scanned">${formatNumber(stats.scanned)} <small>SN</small></div></div>
           <div class="metric"><div class="metric-top">SN bermasalah <span class="metric-mark issue-count">!</span></div><div class="metric-value" id="metric-issues">${stats.issues} <small>SN</small></div></div>
         </section>
-        <section class="table-section"><div class="table-toolbar"><div class="table-title">Rekonsiliasi per item <span class="table-count">${filtered.length} dari ${state.products.length} item · ${stats.total} laptop dihitung · ${stats.nonLaptop} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau nama" value="${escapeHtml(searchTerm)}" aria-label="Cari item"></div></div></div>
+        <section class="table-section"><div class="table-toolbar"><div class="table-title">Rekonsiliasi per item <span class="table-count">${filtered.length} dari ${state.products.length} item · ${stats.total} ${state.countMode === "all" ? "item" : "laptop"} dihitung · ${stats.nonLaptop} tidak dihitung</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau nama" value="${escapeHtml(searchTerm)}" aria-label="Cari item"></div></div></div>
           <div class="table-scroll"><table><thead><tr><th>No</th><th>Item / item code</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th></tr></thead><tbody>${productRows(filtered)}</tbody></table></div>
           <div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Tersimpan otomatis</span><span>Menampilkan ${filtered.length} barang</span></div></section>
         <section class="table-section" style="margin-top:15px"><div class="table-toolbar"><div class="table-title">Riwayat pemindaian <span class="table-count">${state.scanEvents.length} scan</span></div></div><div class="table-scroll"><table class="scan-log-table"><thead><tr><th>Waktu</th><th>Serial Number</th><th>Item code</th><th>Rack</th><th>Hasil scan</th></tr></thead><tbody>${latestScans.length ? latestScans.map((scan) => `<tr><td>${escapeHtml(formatDate(scan.scannedAt, { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</td><td class="scan-log">${escapeHtml(scan.serial)}</td><td>${escapeHtml(scan.sku || "-")}</td><td>${escapeHtml(rackLabel(scan.layout))}</td><td><span class="row-status ${scan.status === "match" ? "match" : scan.status === "non-laptop" ? "non-laptop" : "shortage"}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ada di VEF"}</span></td></tr>`).join("") : `<tr><td class="empty-row" colspan="5">Belum ada Serial Number yang dipindai.</td></tr>`}</tbody></table></div></section>`;
@@ -1643,9 +1667,9 @@
     }
 
     function renderRecap() {
-      const exceptions = state.products.filter((product) => isLaptopProduct(product) && (varianceFor(product) !== 0 || product.note));
+      const exceptions = state.products.filter((product) => isCountedProduct(product) && (varianceFor(product) !== 0 || product.note));
       const canEdit = canEditActiveSession();
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · Item yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section>${renderSessionAccessNotice()}<section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}" ${canEdit ? "" : "disabled"}></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.length} item diperiksa</span></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · ${countModeLabel(state.countMode)} yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section>${renderSessionAccessNotice()}<section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}" ${canEdit ? "" : "disabled"}></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.filter((product) => isCountedProduct(product)).length} item diperiksa</span></div></section>`;
     }
 
     function renderHistory() {
@@ -1656,7 +1680,7 @@
 
     function renderCompletedSessions() {
       const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
-      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Item dihitung</th><th>Unit VEF dihitung</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); const countMode = session.countMode === "all" ? "all" : "laptops"; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU <div class="product-sku">${countModeLabel(countMode)}</div></td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessionView() {
@@ -1724,6 +1748,7 @@
       const snapshot = session.snapshot;
       const scans = snapshot.scanEvents || [];
       const products = snapshot.products || [];
+      const countMode = snapshot.countMode === "all" ? "all" : "laptops";
       const workbooks = session.workbooks || [];
       const workbookArchive = `<section class="table-section" style="margin:12px 0"><div class="table-toolbar"><div class="table-title">File XLSX sumber <span class="table-count">${workbooks.length} file</span></div></div>${workbooks.length ? `<div class="completed-export-actions">${workbooks.map((workbook) => `<button class="button button-secondary" type="button" data-download-workbook="${escapeHtml(workbook.storagePath)}" data-download-session="${escapeHtml(session.id)}">↓ ${escapeHtml(workbook.name)} · ${formatNumber(workbook.size / 1024)} KB</button>`).join("")}</div>` : `<div class="confirm-body">Tidak ada file XLSX yang diarsipkan untuk sesi ini.</div>`}</section>`;
       const layouts = snapshot.layouts?.length ? snapshot.layouts : [...new Set(scans.map((scan) => scan.layout).filter(Boolean))];
@@ -1736,16 +1761,16 @@
       }).join("");
       const productRows = products.map((product, index) => {
         const variance = reconciledQty(product) - Number(product.stock || 0);
-        const laptop = isLaptopProduct(product);
-        const status = laptop ? (variance === 0 ? { label: "Sesuai", className: "match" } : variance < 0 ? { label: "Kurang", className: "shortage" } : { label: "Lebih", className: "different" }) : { label: "Bukan laptop", className: "non-laptop" };
-        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
+        const included = isCountedProduct(product, countMode);
+        const status = included ? (variance === 0 ? { label: "Sesuai", className: "match" } : variance < 0 ? { label: "Kurang", className: "shortage" } : { label: "Lebih", className: "different" }) : { label: "Bukan laptop", className: "non-laptop" };
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${included ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${included ? formatNumber(product.pj || 0) : "-"}</td><td>${included ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td><td><span class="row-status ${status.className}">${status.label}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
-      const recapProducts = products.filter((product) => isLaptopProduct(product) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
+      const recapProducts = products.filter((product) => isCountedProduct(product, countMode) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
       const recapRows = recapProducts.map((product, index) => {
         const variance = reconciledQty(product) - Number(product.stock || 0);
         return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : variance > 0 ? "positive" : "zero"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
-      return `${workbookArchive}<div class="completed-export-actions"><button class="button button-primary" type="button" data-export-session="${escapeHtml(session.id)}">↓ Ekspor XLSX</button><button class="button button-secondary" type="button" data-print-session="${escapeHtml(session.id)}">▤ Print</button></div><div class="completed-detail-panel"><h3>Scan Layout · ${scans.length} scan</h3><div class="completed-racks">${racks || `<div class="completed-rack-meta">Tidak ada data Rack.</div>`}</div><h3>Result SO · ${products.length} item</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th><th>Note</th></tr></thead><tbody>${productRows || `<tr><td class="empty-row" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div><h3>Rekap Selisih · ${recapProducts.length} item perlu ditinjau</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Catatan</th></tr></thead><tbody>${recapRows || `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item laptop sesuai dengan VEF.</td></tr>`}</tbody></table></div></div>`;
+      return `${workbookArchive}<div class="completed-export-actions"><button class="button button-primary" type="button" data-export-session="${escapeHtml(session.id)}">↓ Ekspor XLSX</button><button class="button button-secondary" type="button" data-print-session="${escapeHtml(session.id)}">▤ Print</button></div><div class="completed-detail-panel"><h3>Perhitungan: ${countModeLabel(countMode)} · Scan Layout · ${scans.length} scan</h3><div class="completed-racks">${racks || `<div class="completed-rack-meta">Tidak ada data Rack.</div>`}</div><h3>Result SO · ${products.length} item</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Check</th><th>Note</th></tr></thead><tbody>${productRows || `<tr><td class="empty-row" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div><h3>Rekap Selisih · ${recapProducts.length} item perlu ditinjau</h3><div class="table-scroll"><table class="completed-result-table"><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Catatan</th></tr></thead><tbody>${recapRows || `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div></div>`;
     }
 
     function exportCompletedSession(sessionId) {
@@ -1759,6 +1784,7 @@
         return;
       }
       const snapshot = session.snapshot;
+      const countMode = snapshot.countMode === "all" ? "all" : "laptops";
       const workbook = XLSX.utils.book_new();
       const scanRows = [["Rack", "Quantity Target", "Jumlah Scan", "Serial Number", "Item Code", "Item Name", "Hasil Scan", "Waktu Scan"]];
       const layouts = snapshot.layouts?.length ? snapshot.layouts : [...new Set((snapshot.scanEvents || []).map((scan) => scan.layout).filter(Boolean))];
@@ -1794,7 +1820,7 @@
       }
       const resultRows = [["No", "Item Code", "Item Name", "Warehouse", "VEF", "SO", "BOX", "PJ", "Selisih", "Check", "Note"]];
       (snapshot.products || []).forEach((product, index) => {
-        const laptop = isLaptopProduct(product);
+        const included = isCountedProduct(product, countMode);
         const variance = reconciledQty(product) - Number(product.stock || 0);
         resultRows.push([
           index + 1,
@@ -1802,11 +1828,11 @@
           product.name,
           product.warehouse || "",
           Number(product.stock || 0),
-          laptop ? Number(product.count || 0) : "",
+          included ? Number(product.count || 0) : "",
           Number(product.box || 0),
-          laptop ? Number(product.pj || 0) : "",
-          laptop ? variance : "",
-          laptop ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop",
+          included ? Number(product.pj || 0) : "",
+          included ? variance : "",
+          included ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop",
           product.note || ""
         ]);
       });
@@ -1838,8 +1864,9 @@
       const snapshot = session.snapshot;
       const products = snapshot.products || [];
       const scans = snapshot.scanEvents || [];
+      const countMode = snapshot.countMode === "all" ? "all" : "laptops";
       const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || [];
-      const title = escapeHtml(session.workspaceName || "Sesi opname");
+      const title = escapeHtml(`${session.workspaceName || "Sesi opname"} · ${countModeLabel(countMode)}`);
       const owner = escapeHtml(sessionOwnerName(session));
       const pic1 = escapeHtml(pics[0] || "Belum diisi");
       const pic2 = escapeHtml(pics[1] || "Belum diisi");
@@ -1855,12 +1882,12 @@
         return entries.map((scan) => `<tr><td>${escapeHtml(rackName)}</td><td>${target === undefined ? "-" : formatNumber(target)}</td><td>${escapeHtml(scan?.serial || "-")}</td><td>${escapeHtml(scan?.sku || "-")}</td><td>${escapeHtml(scan?.name || "-")}</td><td>${escapeHtml(scan ? scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan" : "Belum ada scan")}</td><td>${scan?.scannedAt ? escapeHtml(formatDate(scan.scannedAt, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })) : "-"}</td></tr>`);
       }).join("");
       const resultRows = products.map((product, index) => {
-        const laptop = isLaptopProduct(product);
+        const included = isCountedProduct(product, countMode);
         const variance = reconciledQty(product) - Number(product.stock || 0);
-        const status = laptop ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop";
-        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${laptop ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${laptop ? formatNumber(product.pj || 0) : "-"}</td><td>${laptop ? `${variance > 0 ? "+" : ""}${formatNumber(variance)}` : "-"}</td><td>${status}</td><td>${escapeHtml(product.note || "-")}</td></tr>`;
+        const status = included ? (variance === 0 ? "Sesuai" : variance < 0 ? "Kurang" : "Lebih") : "Bukan laptop";
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${included ? formatNumber(product.count || 0) : "-"}</td><td>${formatNumber(product.box || 0)}</td><td>${included ? formatNumber(product.pj || 0) : "-"}</td><td>${included ? `${variance > 0 ? "+" : ""}${formatNumber(variance)}` : "-"}</td><td>${status}</td><td>${escapeHtml(product.note || "-")}</td></tr>`;
       }).join("");
-      const recapProducts = products.filter((product) => isLaptopProduct(product) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
+      const recapProducts = products.filter((product) => isCountedProduct(product, countMode) && (reconciledQty(product) !== Number(product.stock || 0) || product.note));
       const recapRows = recapProducts.map((product, index) => {
         const variance = reconciledQty(product) - Number(product.stock || 0);
         return `<tr><td>${index + 1}</td><td>${escapeHtml(product.sku)}</td><td>${escapeHtml(product.name)}</td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td>${variance > 0 ? "+" : ""}${formatNumber(variance)}</td><td>${escapeHtml(product.note || "-")}</td></tr>`;
@@ -1880,25 +1907,27 @@
     function getWorkspaceDashboardStats(workspace) {
       const data = workspace.data || emptyWorkspaceData();
       const products = Array.isArray(data.products) ? data.products : [];
-      const laptops = products.filter(isLaptopProduct);
-      const laptopProductIds = new Set(laptops.map((product) => product.id));
+      const countMode = data.countMode === "all" ? "all" : "laptops";
+      const countedProducts = products.filter((product) => isCountedProduct(product, countMode));
+      const countedProductIds = new Set(countedProducts.map((product) => product.id));
       const serialMaster = data.serialMaster || {};
-      const laptopSerialKeys = new Set(Object.entries(serialMaster)
-        .filter(([, master]) => master && laptopProductIds.has(master.productId))
+      const countedSerialKeys = new Set(Object.entries(serialMaster)
+        .filter(([, master]) => master && countedProductIds.has(master.productId))
         .map(([serial]) => serial));
       const scanEvents = Array.isArray(data.scanEvents) ? data.scanEvents : [];
       const matchedSerials = new Set(scanEvents
         .filter((event) => event.status === "match")
         .map((event) => event.serialKey || normalizeSerial(event.serial))
-        .filter((serial) => !laptopSerialKeys.size || laptopSerialKeys.has(serial)));
-      const targetSerials = laptopSerialKeys.size || laptops.reduce((total, product) => total + Math.max(0, Number(product.stock) || 0), 0);
+        .filter((serial) => !countedSerialKeys.size || countedSerialKeys.has(serial)));
+      const targetSerials = countedSerialKeys.size || countedProducts.reduce((total, product) => total + Math.max(0, Number(product.stock) || 0), 0);
       const scannedSerials = matchedSerials.size;
       const progress = targetSerials ? Math.min(100, Math.round(scannedSerials / targetSerials * 100)) : 0;
-      const completedProducts = laptops.filter((product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0) === Number(product.stock || 0)).length;
+      const completedProducts = countedProducts.filter((product) => Number(product.count || 0) + Number(product.box || 0) + Number(product.pj || 0) === Number(product.stock || 0)).length;
       const issues = scanEvents.filter((event) => event.status === "duplicate" || event.status === "not-found").length;
       return {
         products: products.length,
-        laptopSkus: laptops.length,
+        countedSkus: countedProducts.length,
+        countMode,
         serials: Object.keys(serialMaster).length,
         targetSerials,
         scannedSerials,
@@ -1921,7 +1950,7 @@
           <td><strong>${escapeHtml(workspace.name || "Nama Brand belum diisi")}</strong>${isCurrent ? '<div class="dashboard-panel-subtitle">Workspace aktif</div>' : ""}</td>
           <td>${escapeHtml((workspace.picNames || []).filter(Boolean).join(" · ") || "Belum ditentukan")}</td>
           <td class="dashboard-progress-cell"><div class="dashboard-progress-line"><div class="dashboard-bar-track" role="progressbar" aria-label="Progres SN ${escapeHtml(workspace.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.progress}"><div class="dashboard-bar-fill" style="width:${stats.progress}%"></div></div><strong>${stats.progress}%</strong></div><div class="dashboard-panel-subtitle">${formatNumber(stats.scannedSerials)} / ${formatNumber(stats.targetSerials)} SN</div></td>
-          <td>${formatNumber(stats.completedProducts)} / ${formatNumber(stats.laptopSkus)} laptop cocok</td>
+          <td>${formatNumber(stats.completedProducts)} / ${formatNumber(stats.countedSkus)} ${stats.countMode === "all" ? "item" : "laptop"} cocok</td>
           <td><span class="row-status ${statusClass}">${status}</span></td>
           <td><button class="button button-secondary dashboard-open-button" data-dashboard-workspace="${escapeHtml(workspace.id)}">${isCurrent ? "Lihat hasil" : "Buka sesi"} →</button></td>
         </tr>`;
@@ -1931,11 +1960,11 @@
         active: sum.active + Number(!item.stats.isCompleted && item.stats.products > 0),
         completed: sum.completed + Number(item.stats.isCompleted),
         products: sum.products + item.stats.products,
-        laptopSkus: sum.laptopSkus + item.stats.laptopSkus,
+        countedSkus: sum.countedSkus + item.stats.countedSkus,
         serials: sum.serials + item.stats.targetSerials,
         scanned: sum.scanned + item.stats.scannedSerials,
         issues: sum.issues + item.stats.issues
-      }), { active: 0, completed: 0, products: 0, laptopSkus: 0, serials: 0, scanned: 0, issues: 0 });
+      }), { active: 0, completed: 0, products: 0, countedSkus: 0, serials: 0, scanned: 0, issues: 0 });
       const overallProgress = total.serials ? Math.min(100, Math.round(total.scanned / total.serials * 100)) : 0;
       const circumference = 2 * Math.PI * 38;
       const progressLength = (circumference * overallProgress / 100).toFixed(2);
@@ -1949,7 +1978,7 @@
         <div class="dashboard-overview"><p>Pantau pemindaian dan rekonsiliasi dari satu tempat.</p><span class="dashboard-date">${formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" })}</span></div>
         <section class="dashboard-metrics" aria-label="Statistik seluruh workspace">
           <article class="dashboard-metric"><div class="dashboard-metric-label">Total workspace <span class="dashboard-metric-icon">▦</span></div><div class="dashboard-metric-value">${state.workspaces.length}</div><div class="dashboard-metric-note">${total.active} sesi berjalan · ${total.completed} sesi selesai</div></article>
-          <article class="dashboard-metric"><div class="dashboard-metric-label">Laptop terdaftar <span class="dashboard-metric-icon">▤</span></div><div class="dashboard-metric-value">${formatNumber(total.laptopSkus)}</div><div class="dashboard-metric-note">${formatNumber(total.products)} item dari seluruh master</div></article>
+          <article class="dashboard-metric"><div class="dashboard-metric-label">SKU masuk perhitungan <span class="dashboard-metric-icon">▤</span></div><div class="dashboard-metric-value">${formatNumber(total.countedSkus)}</div><div class="dashboard-metric-note">${formatNumber(total.products)} item di seluruh master · sesuai mode tiap sesi</div></article>
           <article class="dashboard-metric"><div class="dashboard-metric-label">SN cocok dipindai <span class="dashboard-metric-icon">✓</span></div><div class="dashboard-metric-value">${formatNumber(total.scanned)}<small> / ${formatNumber(total.serials)}</small></div><div class="dashboard-metric-note">Progres scan keseluruhan ${overallProgress}%</div></article>
           <article class="dashboard-metric"><div class="dashboard-metric-label">SN bermasalah <span class="dashboard-metric-icon alert">!</span></div><div class="dashboard-metric-value">${formatNumber(total.issues)}</div><div class="dashboard-metric-note">Duplikat atau tidak ditemukan</div></article>
         </section>
@@ -1959,9 +1988,9 @@
               <div class="dashboard-legend"><span class="dashboard-legend-item"><i class="dashboard-legend-dot"></i>${formatNumber(total.scanned)} SN dipindai</span><span class="dashboard-legend-item"><i class="dashboard-legend-dot remaining"></i>${formatNumber(Math.max(0, total.serials - total.scanned))} tersisa</span></div>
             </div>
           </article>
-          <article class="dashboard-panel"><header class="dashboard-panel-head"><div><div class="dashboard-panel-title">Progres per sesi</div><div class="dashboard-panel-subtitle">Perbandingan SN terpindai terhadap master laptop</div></div><span class="dashboard-chart-tag">${state.workspaces.length} sesi</span></header><div class="dashboard-chart-list">${chartRows}</div>${total.serials ? "" : '<div class="dashboard-empty">Unggah workbook di Master VEF untuk mulai melihat progres pemindaian.</div>'}</article>
+          <article class="dashboard-panel"><header class="dashboard-panel-head"><div><div class="dashboard-panel-title">Progres per sesi</div><div class="dashboard-panel-subtitle">SN terpindai dibanding target sesuai mode perhitungan tiap sesi</div></div><span class="dashboard-chart-tag">${state.workspaces.length} sesi</span></header><div class="dashboard-chart-list">${chartRows}</div>${total.serials ? "" : '<div class="dashboard-empty">Unggah workbook di Master VEF untuk mulai melihat progres pemindaian.</div>'}</article>
         </section>
-        <section class="table-section dashboard-table"><div class="table-toolbar"><div class="table-title">Rincian workspace <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Workspace</th><th>PIC</th><th>Progres scan</th><th>Rekonsiliasi</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Progres dihitung dari SN laptop cocok yang telah dipindai.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>
+        <section class="table-section dashboard-table"><div class="table-toolbar"><div class="table-title">Rincian workspace <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Workspace</th><th>PIC</th><th>Progres scan</th><th>Rekonsiliasi</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Progres mengikuti mode perhitungan masing-masing sesi.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>
       </div>`;
     }
 
@@ -1976,10 +2005,38 @@
         const deleteButton = isSuperAdmin()
           ? `<button class="button button-danger" type="button" data-delete-workspace="${escapeHtml(workspace.id)}" ${state.workspaces.length <= 1 ? 'disabled title="Minimal satu sesi harus dipertahankan."' : ""}>Hapus</button>`
           : "";
-        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span><div class="dashboard-panel-subtitle">Pemilik: ${escapeHtml(sessionOwnerName(data.activeSession))}</div></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
+        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></div></td><td><select class="workspace-count-mode" data-workspace-count-mode="${escapeHtml(workspace.id)}" aria-label="Pilihan perhitungan untuk ${escapeHtml(workspace.name)}" ${canEdit && data.activeSession.status !== "completed" ? "" : "disabled title=\"Mode perhitungan sesi selesai atau milik staf lain tidak dapat diubah\""}><option value="laptops" ${(data.countMode || "laptops") === "laptops" ? "selected" : ""}>Laptop saja</option><option value="all" ${data.countMode === "all" ? "selected" : ""}>Semua item</option></select></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span><div class="dashboard-panel-subtitle">Pemilik: ${escapeHtml(sessionOwnerName(data.activeSession))}</div></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
       }).join("");
       const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
-      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Lima sesi tersedia sejak awal. Penambahan dan penghapusan sesi hanya dapat dilakukan Super Admin.</p></div><div class="head-buttons">${addButton}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Pilih untuk tiap sesi apakah perhitungan mencakup semua item atau laptop saja. Penambahan dan penghapusan sesi hanya dapat dilakukan Super Admin.</p></div><div class="head-buttons">${addButton}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Perhitungan</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+    }
+
+    function updateWorkspaceCountMode(select) {
+      const workspace = state.workspaces.find((item) => item.id === select.dataset.workspaceCountMode);
+      const countMode = select.value === "all" ? "all" : "laptops";
+      if (!workspace || !canEditWorkspaceSession(workspace) || workspace.data.activeSession.status === "completed") {
+        select.value = workspace?.data.countMode === "all" ? "all" : "laptops";
+        notify("Mode perhitungan sesi ini tidak dapat diubah.");
+        return;
+      }
+      if (workspace.data.countMode === countMode) return;
+      workspace.data.countMode = countMode;
+      reclassifyScanEvents(workspace.data.scanEvents || [], workspace.data.serialMaster, countMode);
+      for (const product of workspace.data.products || []) {
+        product.count = (workspace.data.scanEvents || []).filter((event) => event.status === "match" && event.productId === product.id).length;
+      }
+      workspace.data.historyEvents = [...(workspace.data.historyEvents || []), {
+        id: crypto.randomUUID(),
+        type: "Mode perhitungan diubah",
+        description: `Perhitungan sesi diubah menjadi ${countModeLabel(countMode)}.`,
+        workspaceId: workspace.id,
+        sessionId: workspace.data.activeSession.id,
+        createdAt: new Date().toISOString()
+      }];
+      if (workspace.id === state.currentWorkspaceId) Object.assign(state, snapshotWorkspaceData(workspace.data));
+      persist();
+      render();
+      notify(`Perhitungan sesi ${workspace.name || ""} diubah menjadi ${countModeLabel(countMode)}.`);
     }
 
     function addWorkspace() {
@@ -2073,7 +2130,7 @@
         <h2 class="about-section-title">Panduan menggunakan workspace</h2>
         <section class="about-guide-grid" aria-label="Panduan setiap workspace">
           ${guide("Ringkasan", "▥", "Dashboard", "Pantau progres scan, jumlah laptop, sesi berjalan, dan sesi yang selesai. Pilih sesi pada tabel untuk langsung membuka workspace-nya.", "dashboard", "Dashboard")}
-          ${guide("Langkah 1", "▦", "Jadwal", "Pilih sesi opname, lalu isi nama brand dan PIC. Penambahan atau penghapusan sesi hanya dapat dilakukan oleh Super Admin.", "workspaces", "Jadwal")}
+          ${guide("Langkah 1", "▦", "Jadwal", "Pilih sesi opname, tentukan apakah perhitungan mencakup semua item atau laptop saja, lalu isi nama brand dan PIC. Penambahan atau penghapusan sesi hanya dapat dilakukan oleh Super Admin.", "workspaces", "Jadwal")}
           ${guide("Langkah 2", "▤", "Master VEF", "Unggah file XLSX atau XLS yang berisi data VEF dan serial number. Workbook yang valid menjadi master sesi dan file aslinya disimpan untuk arsip setelah sesi selesai.", "products", "Master VEF")}
           ${guide("Langkah 3", "▦", "Scan Layout", "Untuk tiap rack, isi nomor rack dan quantity target, lalu pindai serial number. Aplikasi menandai SN cocok, duplikat, bukan laptop, atau tidak ditemukan.", "layouts", "Scan Layout")}
           ${guide("Langkah 4", "⌗", "Result SO", "Lihat jumlah scan dan hasil per item. Isi quantity Box atau PJ jika diperlukan; selesaikan opname untuk mengunci hasil dan menyimpannya sebagai arsip.", "opname", "Result SO")}
@@ -2206,6 +2263,7 @@
         input.value = workspace.picNames[index];
         persist();
       }));
+      document.querySelectorAll("[data-workspace-count-mode]").forEach((select) => select.addEventListener("change", () => updateWorkspaceCountMode(select)));
       document.querySelectorAll("[data-layout-form]").forEach((form) => form.addEventListener("submit", handleLayoutScanSubmit));
       document.querySelectorAll("[data-manual-form]").forEach((form) => form.addEventListener("submit", handleManualEntrySubmit));
       document.querySelectorAll("[data-manual-product]").forEach((input) => {
@@ -2297,9 +2355,9 @@
     function addScanEvent(serial, scanEvents = state.scanEvents, layout = "") {
       const key = normalizeSerial(serial);
       const master = state.serialMaster[key];
-      const laptop = master ? isLaptopProduct(master) : false;
-      const duplicate = laptop && scanEvents.some((event) => event.serialKey === key && event.status === "match");
-      const status = !master ? "not-found" : !laptop ? "non-laptop" : duplicate ? "duplicate" : "match";
+      const included = master ? isCountedProduct(master) : false;
+      const duplicate = included && scanEvents.some((event) => event.serialKey === key && event.status === "match");
+      const status = !master ? "not-found" : !included ? "non-laptop" : duplicate ? "duplicate" : "match";
       const event = { id: crypto.randomUUID(), serial: String(serial).trim(), serialKey: key, productId: master?.productId || "", sku: master?.sku || "", name: master?.name || "", itemGroup: master?.itemGroup || "", layout, status, scannedAt: new Date().toISOString() };
       scanEvents.push(event);
       return event;
@@ -2422,19 +2480,7 @@
       const productBefore = state.products.find((product) => product.id === removed.productId);
       const soBefore = productBefore ? scannedFor(productBefore.id) : 0;
       state.scanEvents = state.scanEvents.filter((event) => event.id !== id);
-      const seen = new Set();
-      for (const event of state.scanEvents) {
-        const key = normalizeSerial(event.serial);
-        const master = state.serialMaster[key];
-        event.serialKey = key;
-        event.productId = master?.productId || "";
-        event.sku = master?.sku || "";
-        event.name = master?.name || "";
-        if (!master) event.status = "not-found";
-        else if (!isLaptopProduct(master)) event.status = "non-laptop";
-        else if (seen.has(key)) event.status = "duplicate";
-        else { event.status = "match"; seen.add(key); }
-      }
+      reclassifyScanEvents(state.scanEvents, state.serialMaster, state.countMode);
       state.products.forEach((product) => { product.count = scannedFor(product.id); });
       const soAfter = productBefore ? scannedFor(productBefore.id) : soBefore;
       recordActivity("Scan dihapus", `${removed.serial} dihapus dari ${rackLabel(removed.layout)}${removed.sku ? ` · ${removed.sku}` : ""}.${productBefore && soBefore !== soAfter ? ` SO ${removed.sku}: ${soBefore} → ${soAfter}.` : ""}`);
@@ -2446,20 +2492,7 @@
     function normalizeWorkspaceClassifications() {
       for (const workspace of state.workspaces) {
         const data = workspace.data;
-        const seen = new Set();
-        for (const event of data.scanEvents || []) {
-          const key = normalizeSerial(event.serial);
-          const master = data.serialMaster?.[key];
-          event.serialKey = key;
-          event.productId = master?.productId || "";
-          event.sku = master?.sku || "";
-          event.name = master?.name || "";
-          event.itemGroup = master?.itemGroup || "";
-          if (!master) event.status = "not-found";
-          else if (!isLaptopProduct(master)) event.status = "non-laptop";
-          else if (seen.has(key)) event.status = "duplicate";
-          else { event.status = "match"; seen.add(key); }
-        }
+        reclassifyScanEvents(data.scanEvents || [], data.serialMaster, data.countMode === "all" ? "all" : "laptops");
         for (const product of data.products || []) {
           product.count = (data.scanEvents || []).filter((event) => event.status === "match" && event.productId === product.id).length;
           product.box = (data.manualEntries || []).filter((entry) => entry.productId === product.id).reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
@@ -2616,7 +2649,7 @@
     function openFinishDialog() {
       if (!requireActiveSessionEdit()) return;
       const stats = getStats();
-      document.getElementById("finish-message").innerHTML = `Sesi menghitung <strong>${stats.total} SKU laptop</strong> atau <strong>${formatNumber(stats.expected)} unit VEF</strong>. Ada <strong>${stats.shortages} item kurang</strong>, <strong>${stats.surpluses} item lebih</strong>, <strong>${stats.issues} SN bermasalah</strong>, dan <strong>${stats.nonLaptopScans} SN bukan laptop</strong> yang dikecualikan dari SO.`;
+      document.getElementById("finish-message").innerHTML = `Sesi menghitung <strong>${stats.total} SKU (${countModeLabel(stats.countMode)})</strong> atau <strong>${formatNumber(stats.expected)} unit VEF</strong>. Ada <strong>${stats.shortages} item kurang</strong>, <strong>${stats.surpluses} item lebih</strong>, <strong>${stats.issues} SN bermasalah</strong>${stats.nonLaptopScans ? `, dan <strong>${stats.nonLaptopScans} SN bukan laptop</strong> yang dikecualikan dari SO` : ""}.`;
       document.getElementById("finish-dialog").showModal();
     }
 
@@ -2628,6 +2661,7 @@
         products: state.products,
         scanEvents: state.scanEvents,
         manualEntries: state.manualEntries,
+        countMode: state.countMode,
         layouts: state.layouts,
         layoutQuantities: state.layoutQuantities,
         layoutNumbers: state.layoutNumbers
@@ -2691,7 +2725,8 @@
       const header = ["Item Code", "Item Name", "Item Group", "Brand", "Warehouse", "Jenis", "VEF", "SO", "BOX", "PJ", "Selisih", "Check"];
       const rows = state.products.map((product) => {
         const laptop = isLaptopProduct(product);
-        return [product.sku, product.name, product.itemGroup || "", product.brand, product.warehouse, laptop ? "Laptop" : "Bukan laptop", product.stock, laptop ? product.count || 0 : "", product.box || 0, laptop ? product.pj || 0 : "", laptop ? varianceFor(product) : "", laptop ? statusFor(product).label : "Bukan laptop"];
+        const included = isCountedProduct(product);
+        return [product.sku, product.name, product.itemGroup || "", product.brand, product.warehouse, laptop ? "Laptop" : "Bukan laptop", product.stock, included ? product.count || 0 : "", product.box || 0, included ? product.pj || 0 : "", included ? varianceFor(product) : "", included ? statusFor(product).label : "Bukan laptop"];
       });
       const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\r\n");
       const link = document.createElement("a");
