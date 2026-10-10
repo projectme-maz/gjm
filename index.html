@@ -328,6 +328,51 @@
     .workspace-name-input:focus { border-color: #739b7c; box-shadow: 0 0 0 2px rgba(40,93,69,.09); }
     .workspace-row.current { background: #f6faf5; }
     .workspace-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .schedule-overview { align-items: center; background: linear-gradient(118deg, #174c3e, #24705c 68%, #438567); border: 1px solid rgba(255,255,255,.16); border-radius: 15px; box-shadow: 0 12px 28px rgba(23,76,62,.14); color: #fff; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 18px; overflow: hidden; padding: 22px 25px; position: relative; }
+    .schedule-overview::after { background: rgba(205,236,202,.12); border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 230px; position: absolute; right: 18%; top: -164px; width: 230px; }
+    .schedule-overview-copy, .schedule-overview-stats { position: relative; z-index: 1; }
+    .schedule-overview-kicker { color: #c5e0d4; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; }
+    .schedule-overview-title { font-size: 18px; font-weight: 700; margin-top: 4px; }
+    .schedule-overview-description { color: #d5e9df; font-size: 11px; margin-top: 3px; }
+    .schedule-overview-stats { display: flex; gap: 8px; }
+    .schedule-overview-stat { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; min-width: 76px; padding: 8px 12px; text-align: center; }
+    .schedule-overview-stat strong { display: block; font-size: 17px; line-height: 1.1; }
+    .schedule-overview-stat span { color: #d5e9df; display: block; font-size: 9px; margin-top: 3px; }
+    .schedule-grid { display: grid; gap: 13px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); }
+    .schedule-card { background: linear-gradient(155deg, #fff, #fcfdfb); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 5px 18px rgba(35,59,38,.04); min-width: 0; overflow: hidden; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .schedule-card:hover { border-color: #c7dacf; box-shadow: 0 10px 25px rgba(35,59,38,.08); transform: translateY(-2px); }
+    .schedule-card.current { border-color: #86b9a3; box-shadow: 0 0 0 2px rgba(42,117,91,.08), 0 8px 22px rgba(35,59,38,.06); }
+    .schedule-card-head { align-items: center; border-bottom: 1px solid #edf1eb; display: flex; gap: 11px; padding: 14px 15px; }
+    .schedule-card-number { align-items: center; background: #eaf3ed; border: 1px solid #dcebe0; border-radius: 9px; color: var(--green); display: inline-flex; flex: 0 0 37px; font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 13px; font-weight: 700; height: 37px; justify-content: center; }
+    .schedule-card-title { flex: 1; min-width: 0; }
+    .schedule-card-title .workspace-name-input { font-size: 13px; max-width: none; }
+    .schedule-card-subtitle { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .schedule-card-badges { align-items: flex-end; display: flex; flex-direction: column; gap: 5px; }
+    .schedule-current-badge { background: #e7f3ed; border-radius: 99px; color: #27694f; font-size: 9px; font-weight: 700; padding: 4px 8px; white-space: nowrap; }
+    .schedule-card-body { display: grid; gap: 13px; padding: 14px 15px; }
+    .schedule-mode-box { background: linear-gradient(110deg, #f0f7f2, #f7faf5); border: 1px solid #e0ebe2; border-radius: 10px; display: flex; gap: 14px; justify-content: space-between; padding: 10px 11px; }
+    .schedule-mode-copy { min-width: 0; }
+    .schedule-mode-title { color: var(--ink); font-size: 11px; font-weight: 700; }
+    .schedule-mode-hint { color: var(--muted); font-size: 9px; line-height: 1.4; margin-top: 2px; }
+    .schedule-mode-control { display: grid; flex: 0 0 145px; gap: 4px; }
+    .schedule-mode-control label, .schedule-pic-field label { color: var(--muted); font-size: 9px; font-weight: 700; }
+    .schedule-card .workspace-count-mode { border-radius: 7px; font-size: 10px; max-width: none; }
+    .schedule-pics { display: grid; gap: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .schedule-pic-field { display: grid; gap: 4px; min-width: 0; }
+    .schedule-pic-field .workspace-name-input { font-size: 10px; font-weight: 500; max-width: none; }
+    .schedule-card-stats { display: grid; gap: 7px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .schedule-stat { background: #f7f9f6; border: 1px solid #edf1eb; border-radius: 8px; min-width: 0; padding: 8px; }
+    .schedule-stat strong { display: block; font-variant-numeric: tabular-nums; font-size: 14px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .schedule-stat span { color: var(--muted); display: block; font-size: 9px; margin-top: 3px; }
+    .schedule-progress { display: grid; gap: 5px; }
+    .schedule-progress-head { align-items: center; color: var(--muted); display: flex; font-size: 9px; justify-content: space-between; }
+    .schedule-progress-head strong { color: var(--green); font-size: 10px; }
+    .schedule-progress .dashboard-bar-track { height: 6px; }
+    .schedule-card-foot { align-items: center; border-top: 1px solid #edf1eb; display: flex; gap: 8px; justify-content: space-between; padding: 11px 15px; }
+    .schedule-owner { color: var(--muted); font-size: 9px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .schedule-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+    .schedule-actions .button { font-size: 10px; min-height: 32px; padding: 0 10px; }
+    .schedule-empty { background: var(--paper); border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); padding: 35px 18px; text-align: center; }
     .dashboard-page { animation: dashboard-enter .32s ease both; }
     @keyframes dashboard-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
     .dashboard-overview { align-items: flex-end; display: flex; justify-content: space-between; margin: -5px 0 20px; }
@@ -377,6 +422,7 @@
     @media (max-width: 900px) {
       .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .dashboard-charts { grid-template-columns: minmax(0, .9fr) minmax(0, 1.5fr); }
+      .schedule-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); }
     }
     @media (max-width: 650px) {
       .dashboard-overview { align-items: flex-start; flex-direction: column; gap: 6px; }
@@ -386,6 +432,15 @@
       .dashboard-charts { grid-template-columns: minmax(0, 1fr); }
       .dashboard-chart-list { gap: 14px; padding: 15px; }
       .dashboard-chart-row { grid-template-columns: minmax(64px, .7fr) minmax(70px, 1.5fr) auto; }
+      .schedule-overview { align-items: flex-start; flex-direction: column; gap: 15px; padding: 18px; }
+      .schedule-overview-stats { flex-wrap: wrap; width: 100%; }
+      .schedule-overview-stat { flex: 1; min-width: 65px; padding: 7px 9px; }
+      .schedule-grid { grid-template-columns: minmax(0, 1fr); }
+      .schedule-card-head, .schedule-card-body { padding-left: 12px; padding-right: 12px; }
+      .schedule-card-foot { align-items: flex-start; flex-direction: column; padding-left: 12px; padding-right: 12px; }
+      .schedule-owner { max-width: 100%; }
+      .schedule-actions { width: 100%; }
+      .schedule-actions .button { flex: 1; }
     }
     .toast { background: #222a22; border-radius: 5px; bottom: 22px; box-shadow: var(--shadow); color: white; font-size: 12px; left: 50%; opacity: 0; padding: 11px 16px; pointer-events: none; position: fixed; transform: translate(-50%, 8px); transition: .2s ease; z-index: 20; }
     .toast.visible { opacity: 1; transform: translate(-50%, 0); }
@@ -596,6 +651,18 @@
     html[data-theme="dark"] .completed-rack-scan { border-color: #304440; }
     html[data-theme="dark"] tbody tr:hover { background: #21332f; }
     html[data-theme="dark"] .workspace-row.current { background: #1d322d; }
+    html[data-theme="dark"] .schedule-card,
+    html[data-theme="dark"] .schedule-empty { background: linear-gradient(155deg, #192a27, #172623); border-color: var(--line); color: var(--ink); }
+    html[data-theme="dark"] .schedule-card.current { border-color: #4e8e76; }
+    html[data-theme="dark"] .schedule-card-head,
+    html[data-theme="dark"] .schedule-card-foot { border-color: #304440; }
+    html[data-theme="dark"] .schedule-mode-box { background: linear-gradient(110deg, #203832, #1d302b); border-color: #304b40; }
+    html[data-theme="dark"] .schedule-stat { background: #1d2e2a; border-color: #304440; }
+    html[data-theme="dark"] .schedule-card-number { background: #203a34; border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .schedule-current-badge { background: #203a34; color: #a9dec9; }
+    html[data-theme="dark"] .schedule-overview { background: linear-gradient(118deg, #14372f, #1a5243 68%, #28654d); }
+    html[data-theme="dark"] .schedule-mode-title { color: var(--ink); }
+    html[data-theme="dark"] .schedule-mode-control .workspace-count-mode { background: #14211f; border-color: #3a514b; color: var(--ink); }
     html[data-theme="dark"] .non-laptop-row td { background: #302b1f; }
     html[data-theme="dark"] .non-laptop-row:hover td { background: #3a3322; }
     html[data-theme="dark"] .row-status.pending { background: #303b38; color: #bac6c2; }
@@ -1995,20 +2062,57 @@
     }
 
     function renderWorkspaceSchedule() {
-      const rows = state.workspaces.map((workspace) => {
+      const completedCount = state.workspaces.filter((workspace) => workspace.data.activeSession.status === "completed").length;
+      const activeCount = state.workspaces.filter((workspace) => workspace.data.products.length > 0 && workspace.data.activeSession.status !== "completed").length;
+      const cards = state.workspaces.map((workspace, index) => {
         const data = workspace.data;
         const isCurrent = workspace.id === state.currentWorkspaceId;
         const canEdit = canEditWorkspaceSession(workspace);
-        const status = data.activeSession.status === "completed" ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
-        const statusClass = data.activeSession.status === "completed" ? "match" : data.products.length ? "different" : "pending";
+        const stats = getWorkspaceDashboardStats(workspace);
+        const isCompleted = data.activeSession.status === "completed";
+        const status = isCompleted ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
+        const statusClass = isCompleted ? "match" : data.products.length ? "different" : "pending";
         const serials = Object.keys(data.serialMaster || {}).length;
+        const countMode = data.countMode === "all" ? "all" : "laptops";
+        const modeDisabled = !canEdit || isCompleted;
         const deleteButton = isSuperAdmin()
           ? `<button class="button button-danger" type="button" data-delete-workspace="${escapeHtml(workspace.id)}" ${state.workspaces.length <= 1 ? 'disabled title="Minimal satu sesi harus dipertahankan."' : ""}>Hapus</button>`
           : "";
-        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></div></td><td><select class="workspace-count-mode" data-workspace-count-mode="${escapeHtml(workspace.id)}" aria-label="Pilihan perhitungan untuk ${escapeHtml(workspace.name)}" ${canEdit && data.activeSession.status !== "completed" ? "" : "disabled title=\"Mode perhitungan sesi selesai atau milik staf lain tidak dapat diubah\""}><option value="laptops" ${(data.countMode || "laptops") === "laptops" ? "selected" : ""}>Laptop saja</option><option value="all" ${data.countMode === "all" ? "selected" : ""}>Semua item</option></select></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span><div class="dashboard-panel-subtitle">Pemilik: ${escapeHtml(sessionOwnerName(data.activeSession))}</div></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
+        return `<article class="schedule-card ${isCurrent ? "current" : ""}">
+          <header class="schedule-card-head">
+            <span class="schedule-card-number" aria-label="Sesi ${index + 1}">${String(index + 1).padStart(2, "0")}</span>
+            <div class="schedule-card-title">
+              <input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand sesi ${index + 1}" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}>
+              <div class="schedule-card-subtitle">Sesi ${String(index + 1).padStart(2, "0")} · ${formatNumber(stats.countedSkus)} item masuk perhitungan</div>
+            </div>
+            <div class="schedule-card-badges">
+              <span class="row-status ${statusClass}">${status}</span>
+              ${isCurrent ? '<span class="schedule-current-badge">Sedang dipilih</span>' : ""}
+            </div>
+          </header>
+          <div class="schedule-card-body">
+            <div class="schedule-mode-box">
+              <div class="schedule-mode-copy"><div class="schedule-mode-title">Mode perhitungan</div><div class="schedule-mode-hint">${countMode === "all" ? "Semua jenis item dari master VEF masuk hitungan." : "Hanya item yang terdeteksi sebagai laptop yang dihitung."}</div></div>
+              <div class="schedule-mode-control"><label for="count-mode-${escapeHtml(workspace.id)}">Pilih mode</label><select class="workspace-count-mode" id="count-mode-${escapeHtml(workspace.id)}" data-workspace-count-mode="${escapeHtml(workspace.id)}" aria-label="Pilihan perhitungan untuk ${escapeHtml(workspace.name || `Sesi ${index + 1}`)}" ${modeDisabled ? 'disabled title="Mode perhitungan sesi selesai atau milik staf lain tidak dapat diubah"' : ""}><option value="laptops" ${countMode === "laptops" ? "selected" : ""}>Laptop saja</option><option value="all" ${countMode === "all" ? "selected" : ""}>Semua item</option></select></div>
+            </div>
+            <div class="schedule-pics">
+              <div class="schedule-pic-field"><label for="pic-${escapeHtml(workspace.id)}-1">PIC 1</label><input class="workspace-name-input" id="pic-${escapeHtml(workspace.id)}-1" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name || index + 1)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}" ${canEdit ? "" : 'disabled title="Sesi sedang dikerjakan staf lain"'}></div>
+              <div class="schedule-pic-field"><label for="pic-${escapeHtml(workspace.id)}-2">PIC 2</label><input class="workspace-name-input" id="pic-${escapeHtml(workspace.id)}-2" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name || index + 1)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}" ${canEdit ? "" : 'disabled title="Sesi sedang dikerjakan staf lain"'}></div>
+            </div>
+            <div class="schedule-card-stats">
+              <div class="schedule-stat"><strong>${formatNumber(stats.countedSkus)}</strong><span>${countModeLabel(countMode)}</span></div>
+              <div class="schedule-stat"><strong>${formatNumber(serials)}</strong><span>SN master</span></div>
+              <div class="schedule-stat"><strong>${formatNumber(data.scanEvents.length)}</strong><span>Scan · ${data.layouts.length} layout</span></div>
+            </div>
+            <div class="schedule-progress"><div class="schedule-progress-head"><span>Progres serial number</span><strong>${stats.progress}% · ${formatNumber(stats.scannedSerials)} / ${formatNumber(stats.targetSerials)}</strong></div><div class="dashboard-bar-track" role="progressbar" aria-label="Progres ${escapeHtml(workspace.name || `Sesi ${index + 1}`)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.progress}"><div class="dashboard-bar-fill" style="width:${stats.progress}%"></div></div></div>
+          </div>
+          <footer class="schedule-card-foot"><span class="schedule-owner">Pemilik sesi · ${escapeHtml(sessionOwnerName(data.activeSession))}</span><div class="schedule-actions"><button class="button ${isCurrent ? "button-secondary" : "button-primary"}" type="button" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>${isCurrent ? "Sesi aktif" : "Buka sesi"}${isCurrent ? "" : " →"}</button>${deleteButton}</div></footer>
+        </article>`;
       }).join("");
       const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
-      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Pilih untuk tiap sesi apakah perhitungan mencakup semua item atau laptop saja. Penambahan dan penghapusan sesi hanya dapat dilakukan Super Admin.</p></div><div class="head-buttons">${addButton}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Perhitungan</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Atur ruang lingkup hitung, penanggung jawab, dan sesi kerja untuk setiap brand.</p></div><div class="head-buttons">${addButton}</div></section>
+        <section class="schedule-overview" aria-label="Ringkasan jadwal stock opname"><div class="schedule-overview-copy"><div class="schedule-overview-kicker">Perencanaan stock opname</div><div class="schedule-overview-title">Semua sesi, tertata dalam satu tempat</div><div class="schedule-overview-description">Pilih mode perhitungan dan PIC untuk setiap brand. Data setiap sesi tetap terpisah.</div></div><div class="schedule-overview-stats"><div class="schedule-overview-stat"><strong>${state.workspaces.length}</strong><span>Total sesi</span></div><div class="schedule-overview-stat"><strong>${activeCount}</strong><span>Berjalan</span></div><div class="schedule-overview-stat"><strong>${completedCount}</strong><span>Selesai</span></div></div></section>
+        <section class="schedule-grid" aria-label="Daftar sesi stock opname">${cards || '<div class="schedule-empty">Belum ada sesi stock opname.</div>'}</section>`;
     }
 
     function updateWorkspaceCountMode(select) {
