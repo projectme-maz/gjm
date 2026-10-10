@@ -961,13 +961,13 @@
         createdByUsername: owner.user_metadata?.username || owner.email || "Pengguna"
       } : {})
     });
-    const DEFAULT_LAYOUTS = Array.from({ length: 4 }, (_, index) => `Rack ${index + 1}`);
+    const DEFAULT_LAYOUTS = Array.from({ length: 3 }, (_, index) => `Rack ${index + 1}`);
     const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), countMode: "laptops", importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
     const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], manualEntries: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), countMode: "laptops", importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
     const snapshotWorkspaceData = (source) => {
       const products = source.products || [];
       const sourceLayouts = Array.isArray(source.layouts) && source.layouts.length ? source.layouts : [...DEFAULT_LAYOUTS];
-      const isLegacyDefaultLayoutSet = sourceLayouts.length === 10 && sourceLayouts.every((layout, index) => layout === `Rack ${index + 1}`);
+      const isLegacyDefaultLayoutSet = sourceLayouts.length >= 3 && sourceLayouts.every((layout, index) => layout === `Rack ${index + 1}`);
       const layouts = isLegacyDefaultLayoutSet
         ? sourceLayouts.filter((layout, index) => index < DEFAULT_LAYOUTS.length
           || (source.scanEvents || []).some((scan) => scan.layout === layout)
