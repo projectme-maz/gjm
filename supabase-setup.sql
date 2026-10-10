@@ -87,6 +87,163 @@ create trigger guard_stock_opname_workspace_membership
   before update on public.stock_opname_state
   for each row execute function public.guard_stock_opname_workspace_membership();
 
+create or replace function public.guard_stock_opname_session_ownership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  current_user_id text := auth.uid()::text;
+  is_workspace_super_admin boolean :=
+    coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'super_admin'
+    and coalesce(auth.jwt() -> 'app_metadata' ->> 'owner_username', '') = 'indra';
+  old_workspace jsonb;
+  new_workspace jsonb;
+  old_workspace_data jsonb;
+  new_workspace_data jsonb;
+  old_active_session jsonb;
+  new_active_session jsonb;
+  old_owner_id text;
+  new_owner_id text;
+  old_session_id text;
+  new_session_id text;
+  old_session_has_data boolean;
+  old_archive jsonb;
+  new_archive jsonb;
+  archive_workspace jsonb;
+  workspace_id text;
+  archive_id text;
+begin
+  if is_workspace_super_admin or current_user_id is null then
+    return new;
+  end if;
+
+  for new_workspace in
+    select value from jsonb_array_elements(coalesce(new.data -> 'workspaces', '[]'::jsonb))
+  loop
+    workspace_id := new_workspace ->> 'id';
+    select value into old_workspace
+      from jsonb_array_elements(coalesce(old.data -> 'workspaces', '[]'::jsonb))
+      where value ->> 'id' = workspace_id
+      limit 1;
+    if old_workspace is null then
+      continue;
+    end if;
+
+    old_workspace_data := coalesce(old_workspace -> 'data', '{}'::jsonb);
+    new_workspace_data := coalesce(new_workspace -> 'data', '{}'::jsonb);
+    old_active_session := coalesce(old_workspace_data -> 'activeSession', '{}'::jsonb);
+    new_active_session := coalesce(new_workspace_data -> 'activeSession', '{}'::jsonb);
+    old_owner_id := old_active_session ->> 'createdByUserId';
+    new_owner_id := new_active_session ->> 'createdByUserId';
+    old_session_id := old_active_session ->> 'id';
+    new_session_id := new_active_session ->> 'id';
+    old_session_has_data :=
+      jsonb_array_length(coalesce(old_workspace_data -> 'products', '[]'::jsonb)) > 0
+      or jsonb_array_length(coalesce(old_workspace_data -> 'scanEvents', '[]'::jsonb)) > 0
+      or exists (
+        select 1
+        from jsonb_array_elements(coalesce(old_workspace_data -> 'workbookFiles', '[]'::jsonb)) as workbook(value)
+        where workbook.value ->> 'sessionId' = old_session_id
+      );
+
+    if (old_workspace -> 'name') is distinct from (new_workspace -> 'name')
+      or (old_workspace -> 'picNames') is distinct from (new_workspace -> 'picNames') then
+      if coalesce(old_active_session ->> 'status', 'active') = 'active'
+        and old_session_has_data
+        and old_owner_id is distinct from current_user_id then
+        raise exception 'This active stock opname session belongs to another user.'
+          using errcode = '42501';
+      end if;
+    end if;
+
+    if old_workspace_data is distinct from new_workspace_data then
+      if old_session_id is distinct from new_session_id then
+        if new_owner_id is distinct from current_user_id then
+          raise exception 'A new stock opname session must be created by its authenticated owner.'
+            using errcode = '42501';
+        end if;
+        if coalesce(old_active_session ->> 'status', 'active') <> 'completed'
+          and old_owner_id is distinct from current_user_id
+          and (old_owner_id is not null or old_session_has_data) then
+          raise exception 'This active stock opname session belongs to another user.'
+            using errcode = '42501';
+        end if;
+      else
+        if old_owner_id is not null and old_owner_id is distinct from current_user_id then
+          raise exception 'This active stock opname session belongs to another user.'
+            using errcode = '42501';
+        end if;
+        if old_owner_id is null and old_session_has_data then
+          raise exception 'This legacy stock opname session has no owner; ask the super admin to manage it.'
+            using errcode = '42501';
+        end if;
+        if new_owner_id is not null and new_owner_id is distinct from current_user_id then
+          raise exception 'A stock opname session owner cannot be changed by another user.'
+            using errcode = '42501';
+        end if;
+      end if;
+    end if;
+  end loop;
+
+  for new_archive in
+    select value from jsonb_array_elements(coalesce(new.data -> 'sessions', '[]'::jsonb))
+  loop
+    archive_id := new_archive ->> 'id';
+    select value into old_archive
+      from jsonb_array_elements(coalesce(old.data -> 'sessions', '[]'::jsonb))
+      where value ->> 'id' = archive_id
+      limit 1;
+    if old_archive is not null and old_archive is not distinct from new_archive then
+      continue;
+    end if;
+
+    if old_archive is not null
+      and old_archive ->> 'createdByUserId' is distinct from current_user_id then
+      raise exception 'Only the stock opname session owner can change or delete its archive.'
+        using errcode = '42501';
+    end if;
+    if new_archive ->> 'createdByUserId' is distinct from current_user_id then
+      raise exception 'Only the stock opname session owner can change or create its archive.'
+        using errcode = '42501';
+    end if;
+    if old_archive is null then
+      select value into archive_workspace
+        from jsonb_array_elements(coalesce(new.data -> 'workspaces', '[]'::jsonb))
+        where value ->> 'id' = new_archive ->> 'workspaceId'
+        limit 1;
+      if archive_workspace is null
+        or archive_workspace -> 'data' -> 'activeSession' ->> 'id' is distinct from archive_id
+        or archive_workspace -> 'data' -> 'activeSession' ->> 'status' is distinct from 'completed'
+        or archive_workspace -> 'data' -> 'activeSession' ->> 'createdByUserId' is distinct from current_user_id then
+        raise exception 'A stock opname archive must match a completed session owned by the current user.'
+          using errcode = '42501';
+      end if;
+    end if;
+  end loop;
+
+  for old_archive in
+    select value from jsonb_array_elements(coalesce(old.data -> 'sessions', '[]'::jsonb))
+  loop
+    archive_id := old_archive ->> 'id';
+    if not exists (
+      select 1 from jsonb_array_elements(coalesce(new.data -> 'sessions', '[]'::jsonb)) as archive(value)
+      where archive.value ->> 'id' = archive_id
+    ) and old_archive ->> 'createdByUserId' is distinct from current_user_id then
+      raise exception 'Only the stock opname session owner can change or delete its archive.'
+        using errcode = '42501';
+    end if;
+  end loop;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_stock_opname_session_ownership on public.stock_opname_state;
+create trigger guard_stock_opname_session_ownership
+  before update on public.stock_opname_state
+  for each row execute function public.guard_stock_opname_session_ownership();
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'stock-opname-workbooks',
@@ -114,6 +271,32 @@ create policy "Team members can upload archived stock opname workbooks"
   with check (bucket_id = 'stock-opname-workbooks');
 
 drop policy if exists "Team members can delete archived stock opname workbooks" on storage.objects;
-create policy "Team members can delete archived stock opname workbooks"
+create policy "Session owners and super admins can delete archived stock opname workbooks"
   on storage.objects for delete to authenticated
-  using (bucket_id = 'stock-opname-workbooks');
+  using (
+    bucket_id = 'stock-opname-workbooks'
+    and (
+      (
+        coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'super_admin'
+        and coalesce(auth.jwt() -> 'app_metadata' ->> 'owner_username', '') = 'indra'
+      )
+      or exists (
+        select 1
+        from public.stock_opname_state as opname,
+          jsonb_array_elements(coalesce(opname.data -> 'workspaces', '[]'::jsonb)) as workspace(value)
+        where opname.id = 'stock-opname-team'
+          and workspace.value ->> 'id' = split_part(storage.objects.name, '/', 1)
+          and workspace.value -> 'data' -> 'activeSession' ->> 'id' = split_part(storage.objects.name, '/', 2)
+          and workspace.value -> 'data' -> 'activeSession' ->> 'createdByUserId' = auth.uid()::text
+      )
+      or exists (
+        select 1
+        from public.stock_opname_state as opname,
+          jsonb_array_elements(coalesce(opname.data -> 'sessions', '[]'::jsonb)) as archived(value)
+        where opname.id = 'stock-opname-team'
+          and archived.value ->> 'id' = split_part(storage.objects.name, '/', 2)
+          and archived.value ->> 'workspaceId' = split_part(storage.objects.name, '/', 1)
+          and archived.value ->> 'createdByUserId' = auth.uid()::text
+      )
+    )
+  );

@@ -705,7 +705,15 @@
     const SHARED_STATE_TABLE = "stock_opname_state";
     const WORKBOOK_ARCHIVE_BUCKET = "stock-opname-workbooks";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    const makeSession = () => ({ id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active" });
+    const makeSession = (owner = null) => ({
+      id: crypto.randomUUID(),
+      startedAt: new Date().toISOString(),
+      status: "active",
+      ...(owner ? {
+        createdByUserId: owner.id,
+        createdByUsername: owner.user_metadata?.username || owner.email || "Pengguna"
+      } : {})
+    });
     const DEFAULT_LAYOUTS = Array.from({ length: 10 }, (_, index) => `Rack ${index + 1}`);
     const initialState = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], sessions: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
     const emptyWorkspaceData = () => ({ products: [], serialMaster: {}, scanEvents: [], historyEvents: [], workbookFiles: [], activeSession: makeSession(), importFile: "", importMessage: "", layouts: [...DEFAULT_LAYOUTS], layoutQuantities: {}, layoutNumbers: {} });
@@ -777,6 +785,44 @@
     }
     function activeWorkspaceName() {
       return activeWorkspace()?.name.trim() || "Nama Brand belum diisi";
+    }
+    function workspaceHasUnownedActiveData(workspace) {
+      const data = workspace?.data || {};
+      const session = data.activeSession || {};
+      return session.status === "active" && (
+        (data.products || []).length > 0
+        || (data.scanEvents || []).length > 0
+        || (data.workbookFiles || []).some((workbook) => workbook.sessionId === session.id)
+      );
+    }
+    function canEditWorkspaceSession(workspace) {
+      if (isSuperAdmin()) return true;
+      const userId = authSession?.user?.id;
+      if (!userId || !workspace) return false;
+      const session = workspace.data?.activeSession;
+      if (session?.status === "completed") return true;
+      if (session?.createdByUserId) return session.createdByUserId === userId;
+      return !workspaceHasUnownedActiveData(workspace);
+    }
+    function canEditActiveSession() {
+      return canEditWorkspaceSession(activeWorkspace());
+    }
+    function canEditCompletedSession(session) {
+      return isSuperAdmin() || Boolean(authSession?.user?.id && session?.createdByUserId === authSession.user.id);
+    }
+    function sessionOwnerName(session) {
+      return session?.createdByUsername || (session?.createdByUserId ? "Staf" : "Belum ditetapkan");
+    }
+    function requireActiveSessionEdit() {
+      if (canEditActiveSession()) return true;
+      const owner = activeWorkspace()?.data?.activeSession;
+      notify(`Sesi ini hanya dapat diedit oleh ${sessionOwnerName(owner)} atau Super Admin.`);
+      return false;
+    }
+    function renderSessionAccessNotice() {
+      if (canEditActiveSession()) return "";
+      const owner = activeWorkspace()?.data?.activeSession;
+      return `<div class="history-summary" role="status"><strong>Sesi hanya dapat dilihat.</strong><span>Pengedit: ${escapeHtml(sessionOwnerName(owner))}${owner?.createdByUsername ? " · staf lain tidak dapat mengubah sesi ini" : " · hubungi Super Admin untuk sesi lama"}.</span></div>`;
     }
     async function uploadWorkbookArchive(file, sessionId) {
       if (!authSession || !sharedStateReady) throw new Error("Login diperlukan untuk mengarsipkan file Excel.");
@@ -1067,6 +1113,15 @@
         return "Tabel database belum dibuat. Jalankan file supabase-setup.sql di Supabase → SQL Editor, lalu login kembali.";
       }
       if (error.code === "42501" || /row-level security|permission denied/i.test(message)) {
+        if (/belongs to another user|owner cannot be changed/i.test(message)) {
+          return "Perubahan ditolak karena sesi opname ini sedang dikerjakan staf lain. Data terbaru telah dimuat ulang.";
+        }
+        if (/legacy stock opname session has no owner/i.test(message)) {
+          return "Sesi lama belum memiliki data pemilik. Minta Super Admin menyelesaikan sesi lama sebelum sesi baru dimulai.";
+        }
+        if (/only the stock opname session owner|must be created by its authenticated owner/i.test(message)) {
+          return "Aksi ditolak. Hanya pemilik sesi opname atau Super Admin yang dapat mengubah data ini.";
+        }
         return "Akses database ditolak. Pastikan supabase-setup.sql sudah dijalankan dan akun Anda sudah diundang.";
       }
       return `Gagal menyambungkan data bersama: ${error.message || "kesalahan tidak diketahui"}`;
@@ -1119,6 +1174,7 @@
       }
     }
     async function saveSharedState() {
+      syncTimer = null;
       if (!authSession || !sharedStateReady) return;
       persistLocalState();
       const serializedState = stableSerialize(state);
@@ -1135,6 +1191,23 @@
           syncTimer = setTimeout(saveSharedState, 100);
         }
       } catch (error) {
+        if (error?.code === "42501" && /stock opname session|stock opname archive/i.test(error.message || "")) {
+          try {
+            const { data: row, error: readError } = await readSharedState();
+            if (readError) throw readError;
+            if (!row) throw new Error("Data workspace bersama tidak ditemukan setelah penolakan perubahan.");
+            state = normalizeSharedState(row.data);
+            remoteUpdatedAt = row.updated_at;
+            lastSyncedState = stableSerialize(state);
+            persistLocalState();
+            render();
+          } catch (reloadError) {
+            console.error("Gagal memuat ulang data setelah akses sesi ditolak:", reloadError);
+            notify(`Perubahan sesi ditolak. Gagal memuat data terbaru: ${reloadError.message || "kesalahan tidak diketahui"}`);
+            syncErrorShown = true;
+            return;
+          }
+        }
         if (!syncErrorShown) notify(databaseSetupHint(error));
         syncErrorShown = true;
       }
@@ -1315,8 +1388,8 @@
         <td class="number-cell">${escapeHtml(product.warehouse || "-")}</td>
         <td class="number-cell">${formatNumber(product.stock)}</td>
         <td class="number-cell">${laptop ? formatNumber(product.count || 0) : "-"}</td>
-        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah Box ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="box" value="${Number(product.box || 0)}" ${state.activeSession.status !== "active" ? "disabled" : ""}>` : "-"}</td>
-        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" ? "disabled" : ""}>` : "-"}</td>
+        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah Box ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="box" value="${Number(product.box || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
+        <td>${laptop ? `<input class="qty-input" type="number" min="0" step="1" aria-label="Jumlah PJ ${escapeHtml(product.name)}" data-qty-id="${escapeHtml(product.id)}" data-qty-field="pj" value="${Number(product.pj || 0)}" ${state.activeSession.status !== "active" || !canEditActiveSession() ? "disabled" : ""}>` : "-"}</td>
         <td>${laptop ? `<span class="variance ${variance === 0 ? "zero" : variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span>` : "-"}</td>
         <td><span class="row-status ${status.className}">${status.label}</span></td>
       </tr>`;
@@ -1325,6 +1398,7 @@
     function renderOpname() {
       const stats = getStats();
       const active = state.activeSession.status === "active";
+      const canEdit = canEditActiveSession();
       const filtered = state.products.filter((product) => {
         const query = searchTerm.toLocaleLowerCase("id-ID");
         return !query || `${product.name} ${product.sku} ${product.brand} ${product.warehouse} ${product.itemGroup || ""}`.toLocaleLowerCase("id-ID").includes(query);
@@ -1332,7 +1406,8 @@
       const latestScans = [...state.scanEvents].slice(-8).reverse();
       return `${navMarkup()}
         <section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Result SO · Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ.</p></div><div class="head-buttons"><button class="button button-secondary" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
-        <section class="session-strip"><div class="session-info"><div class="session-kicker">Sesi opname · ${escapeHtml(formatDate(state.activeSession.startedAt, { day: "numeric", month: "short", year: "numeric" }))}</div><div class="session-title">${active ? "Rekonsiliasi sedang berjalan" : "Rekonsiliasi selesai"}</div><div class="session-meta">${state.importFile ? `${escapeHtml(state.importFile)}${state.importMessage ? ` · ${escapeHtml(state.importMessage)}` : ""}` : "Unggah workbook di Master VEF untuk memulai sesi."}</div></div><div class="session-actions"><span class="status-pill"><span class="status-dot" style="${active ? "" : "background:#fff"}"></span>${active ? "Sedang berjalan" : "Selesai"}</span>${active ? `<button class="button" id="finish-button" ${!stats.total ? "disabled title=\"Tidak ada laptop yang dapat dihitung\"" : ""}>Selesaikan opname <span>→</span></button>` : `<button class="button" id="new-session-button"><span class="icon-plus">+</span> Mulai sesi baru</button>`}</div></section>
+        ${renderSessionAccessNotice()}
+        <section class="session-strip"><div class="session-info"><div class="session-kicker">Sesi opname · ${escapeHtml(formatDate(state.activeSession.startedAt, { day: "numeric", month: "short", year: "numeric" }))}</div><div class="session-title">${active ? "Rekonsiliasi sedang berjalan" : "Rekonsiliasi selesai"}</div><div class="session-meta">${state.importFile ? `${escapeHtml(state.importFile)}${state.importMessage ? ` · ${escapeHtml(state.importMessage)}` : ""}` : "Unggah workbook di Master VEF untuk memulai sesi."} · Pemilik: ${escapeHtml(sessionOwnerName(state.activeSession))}</div></div><div class="session-actions"><span class="status-pill"><span class="status-dot" style="${active ? "" : "background:#fff"}"></span>${active ? "Sedang berjalan" : "Selesai"}</span>${active ? `<button class="button" id="finish-button" ${!canEdit || !stats.total ? "disabled" : ""}>Selesaikan opname <span>→</span></button>` : `<button class="button" id="new-session-button" ${!canEdit ? "disabled" : ""}><span class="icon-plus">+</span> Mulai sesi baru</button>`}</div></section>
         <section class="metric-grid" aria-label="Ringkasan stock opname">
           <div class="metric"><div class="metric-top">Laptop dihitung <span class="metric-mark">▤</span></div><div class="metric-value" id="metric-skus">${stats.total} <small>SKU</small></div></div>
           <div class="metric"><div class="metric-top">Unit laptop VEF <span class="metric-mark">#</span></div><div class="metric-value" id="metric-expected">${formatNumber(stats.expected)} <small>unit</small></div></div>
@@ -1346,6 +1421,7 @@
     }
 
     function renderProducts() {
+      const canEdit = canEditActiveSession();
       const query = searchTerm.toLocaleLowerCase("id-ID");
       const serialsByProduct = new Map();
       for (const [serial, master] of Object.entries(state.serialMaster || {})) {
@@ -1354,12 +1430,13 @@
       }
       for (const serials of serialsByProduct.values()) serials.sort((a, b) => a.localeCompare(b, "id-ID"));
       const filtered = state.products.filter((product) => !query || `${product.name} ${product.sku} ${product.itemGroup || ""} ${product.brand} ${product.warehouse}`.toLocaleLowerCase("id-ID").includes(query) || (serialsByProduct.get(product.id) || []).some((serial) => serial.toLocaleLowerCase("id-ID").includes(query)));
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Master VEF · Serial Number dipetakan ke item code, brand, dan warehouse.</p></div><div class="head-buttons"><button class="button button-danger" id="delete-master-button" ${state.products.length ? "" : "disabled"}>Hapus semua data</button><button class="button button-primary" id="import-button">↑ Unggah workbook</button></div></section>
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Master VEF · Serial Number dipetakan ke item code, brand, dan warehouse.</p></div><div class="head-buttons"><button class="button button-danger" id="delete-master-button" ${!canEdit || !state.products.length ? "disabled" : ""}>Hapus semua data</button><button class="button button-primary" id="import-button" ${!canEdit ? "disabled title=\"Sesi ini hanya dapat diubah oleh pemilik atau Super Admin\"" : ""}>↑ Unggah workbook</button></div></section>${renderSessionAccessNotice()}
         <section class="table-section"><div class="table-toolbar"><div class="table-title">Master barang <span class="table-count">${filtered.length} item · ${filtered.filter(isLaptopProduct).length} laptop · ${filtered.filter((product) => !isLaptopProduct(product)).length} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau SN" value="${escapeHtml(searchTerm)}" aria-label="Cari master"></div></div></div><div class="table-scroll"><table><thead><tr><th>Item code</th><th>Item name</th><th>Item Group</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>Serial Number</th></tr></thead><tbody>${filtered.length ? filtered.map((product) => { const serials = serialsByProduct.get(product.id) || []; const laptop = isLaptopProduct(product); return `<tr class="${laptop ? "" : "non-laptop-row"}"><td class="number-cell">${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div>${laptop ? "" : `<span class="row-status non-laptop">Bukan laptop</span>`}</td><td>${escapeHtml(product.itemGroup || "-")}</td><td>${escapeHtml(product.brand || "-")}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${serials.length ? `<details class="serial-details"><summary>${formatNumber(serials.length)} SN · tampilkan</summary><div class="serial-list">${serials.map((serial) => `<span class="serial-token">${escapeHtml(serial)}</span>`).join("")}</div></details>` : "-"}</td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="7">Unggah workbook untuk memuat master VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span>${state.serialMaster ? Object.keys(state.serialMaster).length : 0} serial terdaftar</span><span>${escapeHtml(state.importFile || "Belum ada workbook")}</span></div></section>`;
     }
 
     function renderLayouts() {
       const active = state.activeSession.status === "active";
+      const canEdit = canEditActiveSession();
       const cards = state.layouts.map((layout) => {
         const rackName = rackLabel(layout);
         const rackNumber = state.layoutNumbers[layout] || "";
@@ -1371,9 +1448,9 @@
         const nonLaptopScans = scans.filter((event) => event.status === "non-laptop").length;
         const issues = scans.length - matched - nonLaptopScans;
         const quantityStatus = getLayoutQuantityStatus(scans.length, target);
-        return `<section class="layout-card ${scans.length > 0 && quantityStatus.className === "match" ? "quantity-matched" : ""}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${!state.products.length || !active || !hasTarget || !hasRackNumber ? "disabled" : ""}><button class="button button-primary" type="submit" ${!state.products.length || !active || !hasTarget || !hasRackNumber ? "disabled" : ""}>Catat</button></form><div class="layout-card-foot">${scans.length ? `<div class="layout-scan-list">${scans.slice().reverse().map((scan) => `<div class="layout-scan-row"><div class="layout-scan-info"><div class="layout-last-scan">${escapeHtml(scan.serial)}${scan.status === "duplicate" ? `<span class="scan-warning-icon" role="img" aria-label="Peringatan serial duplikat" title="Serial Number duplikat">!</span>` : ""}${scan.sku ? ` · ${escapeHtml(scan.sku)}` : ""}</div><div class="layout-scan-status ${scan.status}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan"}</div></div><button class="layout-delete" type="button" data-delete-scan="${escapeHtml(scan.id)}" aria-label="Hapus scan ${escapeHtml(scan.serial)}" title="Hapus scan">×</button></div>`).join("")}</div>` : "Belum ada scan di rack ini."}</div></section>`;
+        return `<section class="layout-card ${scans.length > 0 && quantityStatus.className === "match" ? "quantity-matched" : ""}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active || !canEdit ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active || !canEdit ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${!state.products.length || !active || !canEdit || !hasTarget || !hasRackNumber ? "disabled" : ""}><button class="button button-primary" type="submit" ${!state.products.length || !active || !canEdit || !hasTarget || !hasRackNumber ? "disabled" : ""}>Catat</button></form><div class="layout-card-foot">${scans.length ? `<div class="layout-scan-list">${scans.slice().reverse().map((scan) => `<div class="layout-scan-row"><div class="layout-scan-info"><div class="layout-last-scan">${escapeHtml(scan.serial)}${scan.status === "duplicate" ? `<span class="scan-warning-icon" role="img" aria-label="Peringatan serial duplikat" title="Serial Number duplikat">!</span>` : ""}${scan.sku ? ` · ${escapeHtml(scan.sku)}` : ""}</div><div class="layout-scan-status ${scan.status}">${scan.status === "match" ? "Cocok di VEF" : scan.status === "duplicate" ? "SN duplikat" : scan.status === "non-laptop" ? "Bukan laptop" : "Tidak ditemukan"}</div></div>${canEdit ? `<button class="layout-delete" type="button" data-delete-scan="${escapeHtml(scan.id)}" aria-label="Hapus scan ${escapeHtml(scan.serial)}" title="Hapus scan">×</button>` : ""}</div>`).join("")}</div>` : "Belum ada scan di rack ini."}</div></section>`;
       }).join("");
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="category-chip">${state.layouts.length} Rack</span></section>${!state.products.length ? `<div class="history-summary"><strong>Master VEF belum dimuat.</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></div>` : ""}<section class="layout-grid">${cards}</section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="category-chip">${state.layouts.length} Rack</span></section>${renderSessionAccessNotice()}${!state.products.length ? `<div class="history-summary"><strong>Master VEF belum dimuat.</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></div>` : ""}<section class="layout-grid">${cards}</section>`;
     }
 
     function getLayoutQuantityStatus(scanCount, target) {
@@ -1384,6 +1461,7 @@
     }
 
     function updateLayoutQuantity(input) {
+      if (!requireActiveSessionEdit()) return;
       const layout = input.dataset.layoutQuantity;
       const value = input.value.trim();
       if (!value) delete state.layoutQuantities[layout];
@@ -1403,7 +1481,7 @@
       const form = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`);
       const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
       const hasRackNumber = Number.isSafeInteger(Number(state.layoutNumbers[layout])) && Number(state.layoutNumbers[layout]) > 0;
-      const canScan = hasTarget && hasRackNumber && state.products.length > 0 && state.activeSession.status === "active";
+      const canScan = hasTarget && hasRackNumber && state.products.length > 0 && state.activeSession.status === "active" && canEditActiveSession();
       form?.querySelector(".layout-input")?.toggleAttribute("disabled", !canScan);
       form?.querySelector('button[type="submit"]')?.toggleAttribute("disabled", !canScan);
       const scanInput = form?.querySelector(".layout-input");
@@ -1412,6 +1490,7 @@
     }
 
     function updateLayoutNumber(input) {
+      if (!requireActiveSessionEdit()) return;
       const layout = input.dataset.layoutNumber;
       const value = input.value.trim();
       if (!value) delete state.layoutNumbers[layout];
@@ -1426,7 +1505,7 @@
       const form = document.querySelector(`[data-layout-form="${CSS.escape(layout)}"]`);
       const hasRackNumber = Number.isSafeInteger(Number(state.layoutNumbers[layout])) && Number(state.layoutNumbers[layout]) > 0;
       const hasTarget = Number.isSafeInteger(state.layoutQuantities[layout]) && state.layoutQuantities[layout] >= 0;
-      const canScan = hasRackNumber && hasTarget && state.products.length > 0 && state.activeSession.status === "active";
+      const canScan = hasRackNumber && hasTarget && state.products.length > 0 && state.activeSession.status === "active" && canEditActiveSession();
       form?.querySelector(".layout-input")?.toggleAttribute("disabled", !canScan);
       form?.querySelector('button[type="submit"]')?.toggleAttribute("disabled", !canScan);
       const scanInput = form?.querySelector(".layout-input");
@@ -1436,7 +1515,8 @@
 
     function renderRecap() {
       const exceptions = state.products.filter((product) => isLaptopProduct(product) && (varianceFor(product) !== 0 || product.note));
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · Item yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}"></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.length} item diperiksa</span></div></section>`;
+      const canEdit = canEditActiveSession();
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · Item yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section>${renderSessionAccessNotice()}<section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}" ${canEdit ? "" : "disabled"}></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.length} item diperiksa</span></div></section>`;
     }
 
     function renderHistory() {
@@ -1447,7 +1527,7 @@
 
     function renderCompletedSessions() {
       const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
-      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli yang diunggah, PIC, Scan Layout, dan Result SO.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button></div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="11">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli yang diunggah, PIC, Scan Layout, dan Result SO.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Laptop SKU</th><th>Unit laptop VEF</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU</td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessionView() {
@@ -1458,12 +1538,16 @@
       }
       const finishedAt = formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
       const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || [];
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(session.workspaceName || "Sesi opname")}</h1><p class="subtitle">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")} · Selesai ${escapeHtml(finishedAt)}.</p></div><div class="head-buttons"><button class="button button-secondary" id="back-to-completed-sessions">← Kembali ke daftar sesi</button><button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus sesi</button></div></section><section class="completed-session-view">${renderCompletedSessionDetails(session)}</section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(session.workspaceName || "Sesi opname")}</h1><p class="subtitle">Pemilik: ${escapeHtml(sessionOwnerName(session))} · PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")} · Selesai ${escapeHtml(finishedAt)}.</p></div><div class="head-buttons"><button class="button button-secondary" id="back-to-completed-sessions">← Kembali ke daftar sesi</button>${canEditCompletedSession(session) ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus sesi</button>` : ""}</div></section><section class="completed-session-view">${renderCompletedSessionDetails(session)}</section>`;
     }
 
     function requestDeleteCompletedSession(sessionId) {
       const session = state.sessions.find((item) => item.id === sessionId);
       if (!session) return;
+      if (!canEditCompletedSession(session)) {
+        notify(`Arsip hanya dapat dihapus oleh ${sessionOwnerName(session)} atau Super Admin.`);
+        return;
+      }
       pendingCompletedSessionDeletionId = sessionId;
       document.getElementById("delete-completed-session-message").textContent = `Sesi "${session.workspaceName || "Sesi opname"}", file XLSX sumber, dan data detailnya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
       document.getElementById("delete-completed-session-dialog").showModal();
@@ -1471,6 +1555,12 @@
 
     async function deleteCompletedSession() {
       const session = state.sessions.find((item) => item.id === pendingCompletedSessionDeletionId);
+      if (session && !canEditCompletedSession(session)) {
+        document.getElementById("delete-completed-session-dialog").close();
+        pendingCompletedSessionDeletionId = "";
+        notify(`Arsip hanya dapat dihapus oleh ${sessionOwnerName(session)} atau Super Admin.`);
+        return;
+      }
       if (!session) {
         document.getElementById("delete-completed-session-dialog").close();
         pendingCompletedSessionDeletionId = "";
@@ -1705,13 +1795,14 @@
       const rows = state.workspaces.map((workspace) => {
         const data = workspace.data;
         const isCurrent = workspace.id === state.currentWorkspaceId;
+        const canEdit = canEditWorkspaceSession(workspace);
         const status = data.activeSession.status === "completed" ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
         const statusClass = data.activeSession.status === "completed" ? "match" : data.products.length ? "different" : "pending";
         const serials = Object.keys(data.serialMaster || {}).length;
         const deleteButton = isSuperAdmin()
           ? `<button class="button button-danger" type="button" data-delete-workspace="${escapeHtml(workspace.id)}" ${state.workspaces.length <= 1 ? 'disabled title="Minimal satu sesi harus dipertahankan."' : ""}>Hapus</button>`
           : "";
-        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}"></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}"></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
+        return `<tr class="workspace-row ${isCurrent ? "current" : ""}"><td><input class="workspace-name-input" data-workspace-name="${escapeHtml(workspace.id)}" aria-label="Nama brand" placeholder="Nama brand" value="${escapeHtml(workspace.name)}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></td><td><div class="workspace-pic-fields"><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="0" aria-label="PIC 1 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 1" value="${escapeHtml(workspace.picNames[0])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}><input class="workspace-name-input" data-workspace-pic="${escapeHtml(workspace.id)}" data-pic-index="1" aria-label="PIC 2 sesi ${escapeHtml(workspace.name)}" placeholder="Nama PIC 2" value="${escapeHtml(workspace.picNames[1])}" ${canEdit ? "" : "disabled title=\"Sesi sedang dikerjakan staf lain\""}></div></td><td>${data.products.length} item · ${formatNumber(serials)} SN</td><td>${data.scanEvents.length} scan · ${data.layouts.length} layout</td><td><span class="row-status ${statusClass}">${status}</span><div class="dashboard-panel-subtitle">Pemilik: ${escapeHtml(sessionOwnerName(data.activeSession))}</div></td><td><div class="workspace-actions"><button class="button button-primary" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>Buka sesi</button>${deleteButton}</div></td></tr>`;
       }).join("");
       const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
       return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Lima sesi tersedia sejak awal. Penambahan dan penghapusan sesi hanya dapat dilakukan Super Admin.</p></div><div class="head-buttons">${addButton}</div></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi opname <span class="table-count">${state.workspaces.length} sesi</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama Brand</th><th>PIC 1 &amp; PIC 2</th><th>Master</th><th>Aktivitas</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="table-footer"><span>Data tiap sesi disimpan terpisah.</span><span>${escapeHtml(activeWorkspaceName())} dipilih</span></div></section>`;
@@ -1919,6 +2010,11 @@
       document.querySelectorAll("[data-workspace-name]").forEach((input) => input.addEventListener("change", () => {
         const workspace = state.workspaces.find((item) => item.id === input.dataset.workspaceName);
         if (!workspace) return;
+        if (!canEditWorkspaceSession(workspace)) {
+          notify(`Sesi hanya dapat diubah oleh ${sessionOwnerName(workspace.data.activeSession)} atau Super Admin.`);
+          input.value = workspace.name;
+          return;
+        }
         workspace.name = input.value.trim();
         input.value = workspace.name;
         persist();
@@ -1927,6 +2023,11 @@
         const workspace = state.workspaces.find((item) => item.id === input.dataset.workspacePic);
         const index = Number(input.dataset.picIndex);
         if (!workspace || !Number.isInteger(index) || index < 0 || index > 1) return;
+        if (!canEditWorkspaceSession(workspace)) {
+          notify(`Sesi hanya dapat diubah oleh ${sessionOwnerName(workspace.data.activeSession)} atau Super Admin.`);
+          input.value = workspace.picNames[index];
+          return;
+        }
         workspace.picNames[index] = input.value.trim();
         input.value = workspace.picNames[index];
         persist();
@@ -1941,6 +2042,7 @@
         return `${field} ${product?.sku || ""}: ${previous || "0"} → ${current || "0"}.`;
       }));
       document.querySelectorAll("[data-note-sku]").forEach((input) => bindAuditedInput(input, () => {
+        if (!requireActiveSessionEdit()) return;
         const product = state.products.find((item) => item.sku === input.dataset.noteSku);
         if (product) { product.note = input.value; persist(); }
       }, "Catatan", (previous, current) => `Catatan ${input.dataset.noteSku}: ${previous || "kosong"} → ${current || "dihapus"}.`));
@@ -1969,6 +2071,7 @@
     }
 
     function updateQuantity(input) {
+      if (!requireActiveSessionEdit()) return;
       const product = state.products.find((item) => item.id === input.dataset.qtyId);
       if (!product) return;
       product[input.dataset.qtyField] = parseQuantity(input.value);
@@ -2025,6 +2128,7 @@
 
     function handleLayoutScanSubmit(event) {
       event.preventDefault();
+      if (!requireActiveSessionEdit()) return;
       const form = event.currentTarget;
       const input = form.querySelector(".layout-input");
       const serial = input.value.trim();
@@ -2049,6 +2153,7 @@
     }
 
     function deleteScanEvent(id) {
+      if (!requireActiveSessionEdit()) return;
       const removed = state.scanEvents.find((event) => event.id === id);
       if (!removed) return;
       const productBefore = state.products.find((product) => product.id === removed.productId);
@@ -2118,6 +2223,7 @@
       const file = event.target.files?.[0];
       event.target.value = "";
       if (!file) return;
+      if (!requireActiveSessionEdit()) return;
       if (typeof XLSX === "undefined") { notify("Parser Excel tidak termuat. Periksa koneksi internet lalu muat ulang aplikasi."); return; }
       if (!/\.(xlsx|xls)$/i.test(file.name)) { notify("Pilih file Excel berformat .xlsx atau .xls."); return; }
       if (file.size > 50 * 1024 * 1024) { notify("Ukuran file Excel melebihi batas arsip 50 MB."); return; }
@@ -2199,7 +2305,7 @@
           }
         }
         if (!productsByCode.size) {
-          const newSession = makeSession();
+          const newSession = makeSession(authSession.user);
           const archivedWorkbook = await uploadWorkbookArchive(file, newSession.id);
           state.products = [];
           state.serialMaster = {};
@@ -2216,7 +2322,7 @@
           notify("Template dikenali dan diarsipkan. Isi Serial No dan Item Code pada tab VEF Master, lalu unggah ulang.");
           return;
         }
-        const newSession = makeSession();
+        const newSession = makeSession(authSession.user);
         const archivedWorkbook = await uploadWorkbookArchive(file, newSession.id);
         state.products = [...productsByCode.values()].sort((a, b) => a.sku.localeCompare(b.sku, "id-ID"));
         state.serialMaster = serialMaster;
@@ -2242,12 +2348,14 @@
     }
 
     function openFinishDialog() {
+      if (!requireActiveSessionEdit()) return;
       const stats = getStats();
       document.getElementById("finish-message").innerHTML = `Sesi menghitung <strong>${stats.total} SKU laptop</strong> atau <strong>${formatNumber(stats.expected)} unit VEF</strong>. Ada <strong>${stats.shortages} item kurang</strong>, <strong>${stats.surpluses} item lebih</strong>, <strong>${stats.issues} SN bermasalah</strong>, dan <strong>${stats.nonLaptopScans} SN bukan laptop</strong> yang dikecualikan dari SO.`;
       document.getElementById("finish-dialog").showModal();
     }
 
     function finishSession() {
+      if (!requireActiveSessionEdit()) return;
       const stats = getStats();
       const finishedAt = new Date().toISOString();
       const snapshot = JSON.parse(JSON.stringify({
@@ -2258,7 +2366,7 @@
         layoutNumbers: state.layoutNumbers
       }));
       const workbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === state.activeSession.id);
-      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], startedAt: state.activeSession.startedAt, finishedAt, snapshot, workbooks });
+      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], createdByUserId: state.activeSession.createdByUserId || authSession?.user?.id || "", createdByUsername: state.activeSession.createdByUsername || authSession?.user?.user_metadata?.username || authSession?.user?.email || "", startedAt: state.activeSession.startedAt, finishedAt, snapshot, workbooks });
       state.activeSession = { ...state.activeSession, status: "completed", finishedAt };
       recordActivity("Sesi diselesaikan", `Stock opname ${activeWorkspace()?.name || "Sesi opname"} diselesaikan.`);
       persist();
@@ -2268,8 +2376,9 @@
     }
 
     function startNewSession() {
+      if (!requireActiveSessionEdit()) return;
       recordActivity("Sesi baru", "Sesi opname baru dimulai; quantity SO, BOX, dan PJ direset.");
-      state.activeSession = makeSession();
+      state.activeSession = makeSession(authSession?.user || null);
       state.scanEvents = [];
       state.layoutQuantities = {};
       state.lastScan = null;
@@ -2281,6 +2390,7 @@
     }
 
     async function deleteAllMasterData() {
+      if (!requireActiveSessionEdit()) return;
       const currentSessionWorkbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === state.activeSession.id);
       try {
         await removeArchivedWorkbookFiles(currentSessionWorkbooks);
