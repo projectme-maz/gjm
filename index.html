@@ -125,6 +125,45 @@
     .today { color: #656c61; font-size: 12px; }
     .top-pics { color: var(--muted); font-size: 10px; text-align: right; }
     .page-head { align-items: flex-end; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 25px; }
+    .layout-page-head { align-items: center; background: linear-gradient(112deg, #174b42 0%, #176b5b 62%, #398b73 100%); border: 1px solid rgba(255,255,255,.16); border-radius: 15px; box-shadow: 0 12px 28px rgba(23,76,62,.14); color: #fff; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 17px; min-height: 142px; overflow: hidden; padding: 22px 26px; position: relative; }
+    .layout-page-head::after { background: rgba(205,236,222,.11); border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 240px; position: absolute; right: 19%; top: -172px; width: 240px; }
+    .layout-page-heading { min-width: 0; position: relative; z-index: 1; }
+    .layout-page-eyebrow { color: #c5e0d4; display: flex; font-size: 10px; font-weight: 800; gap: 7px; letter-spacing: 1.1px; margin-bottom: 8px; text-transform: uppercase; }
+    .layout-page-head h1 { color: #fff; font-size: clamp(25px, 2.6vw, 32px); letter-spacing: -.35px; }
+    .layout-page-head .subtitle { color: #d5e9df; font-size: 12px; margin-top: 6px; }
+    .layout-rack-count { align-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.17); border-radius: 10px; box-shadow: none; color: #fff; display: inline-flex; flex: 0 0 auto; flex-direction: column; gap: 3px; min-width: 102px; padding: 10px 15px; position: relative; text-align: center; z-index: 1; }
+    .layout-rack-count strong { font-size: 20px; line-height: 1.1; }
+    .layout-rack-count-label { color: #d5e9df; font-size: 9px; }
+    .result-page-head { align-items: center; background: linear-gradient(112deg, #174b42 0%, #176b5b 62%, #398b73 100%); border: 1px solid rgba(255,255,255,.16); border-radius: 15px; box-shadow: 0 12px 28px rgba(23,76,62,.14); color: #fff; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 17px; min-height: 142px; overflow: hidden; padding: 22px 26px; position: relative; }
+    .result-page-head::after { background: rgba(205,236,222,.11); border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 240px; position: absolute; right: 19%; top: -172px; width: 240px; }
+    .result-page-heading { min-width: 0; position: relative; z-index: 1; }
+    .result-page-eyebrow { color: #c5e0d4; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; margin-bottom: 8px; text-transform: uppercase; }
+    .result-page-head h1 { color: #fff; font-size: clamp(25px, 2.6vw, 32px); letter-spacing: -.35px; }
+    .result-page-head .subtitle { color: #d5e9df; font-size: 12px; line-height: 1.6; margin-top: 6px; max-width: 720px; }
+    .result-page-head .head-buttons { position: relative; z-index: 1; }
+    .result-export-button { background: #fff; border-color: rgba(255,255,255,.75); border-radius: 9px; box-shadow: 0 4px 12px rgba(14,55,46,.12); color: #285c4b; min-height: 43px; }
+    .result-export-button:hover { background: #eaf5ef; border-color: #fff; }
+    .archive-page-head { align-items: center; background: linear-gradient(112deg, #174b42 0%, #176b5b 62%, #398b73 100%); border: 1px solid rgba(255,255,255,.16); border-radius: 15px; box-shadow: 0 12px 28px rgba(23,76,62,.14); color: #fff; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 17px; min-height: 142px; overflow: hidden; padding: 22px 26px; position: relative; }
+    .archive-page-head::after { background: rgba(205,236,222,.11); border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 240px; position: absolute; right: 19%; top: -172px; width: 240px; }
+    .archive-page-heading { min-width: 0; position: relative; z-index: 1; }
+    .archive-page-eyebrow { color: #c5e0d4; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; margin-bottom: 8px; text-transform: uppercase; }
+    .archive-page-head h1 { color: #fff; font-size: clamp(25px, 2.6vw, 32px); letter-spacing: -.35px; }
+    .archive-page-head .subtitle { color: #d5e9df; font-size: 12px; line-height: 1.6; margin-top: 6px; max-width: 720px; }
+    .archive-page-head .category-chip { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); color: #fff; flex: 0 0 auto; position: relative; z-index: 1; }
+    .master-page-head { min-height: 176px; }
+    .master-page-head .archive-page-heading { max-width: calc(100% - 215px); }
+    .master-page-head .head-buttons { display: contents; }
+    .master-page-head .master-delete-button,
+    .master-page-head .master-upload-button { position: absolute; right: 26px; z-index: 1; }
+    .master-page-head .master-delete-button { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.34); bottom: 13px; color: #fff; font-size: 10px; min-height: 29px; padding: 0 10px; }
+    .master-page-head .master-delete-button:hover:not(:disabled) { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.55); }
+    .master-page-head .master-upload-button { background: #fff; border-color: rgba(255,255,255,.75); box-shadow: 0 4px 12px rgba(14,55,46,.12); color: #285c4b; right: 26px; top: 29px; }
+    .master-page-head .master-upload-button:hover:not(:disabled) { background: #eaf5ef; border-color: #fff; }
+    .layout-master-notice { align-items: center; background: linear-gradient(105deg, #fff, #f7faf8); border-color: #e1eae5; border-radius: 11px; gap: 12px; justify-content: flex-start; margin: 0 0 15px; padding: 14px 17px; }
+    .layout-master-notice-icon { align-items: center; background: #e7f1eb; border: 1px solid #d9e8de; border-radius: 9px; color: #347158; display: inline-flex; flex: 0 0 32px; font-size: 14px; font-weight: 800; height: 32px; justify-content: center; }
+    .layout-master-notice-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .layout-master-notice-copy strong { color: var(--ink); font-size: 11px; }
+    .layout-master-notice-copy span { color: var(--muted); font-size: 10px; line-height: 1.5; }
     h1 { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: clamp(26px, 3vw, 34px); letter-spacing: 0; line-height: 1.15; margin: 0; }
     .subtitle { color: var(--muted); margin: 8px 0 0; }
     .head-buttons { align-items: center; display: flex; gap: 9px; }
@@ -174,18 +213,18 @@
     .scan-log-table { min-width: 520px; }
     .scan-log .row-status { margin-right: 4px; }
     .layout-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
-    .layout-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 5px 16px rgba(35, 59, 38, .045); min-width: 0; overflow: hidden; position: relative; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .layout-card { background: linear-gradient(145deg, #fff, #fcfdfb); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 5px 16px rgba(35, 59, 38, .045); min-width: 0; overflow: hidden; position: relative; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
     .layout-card:hover { border-color: #cbd9ca; box-shadow: 0 10px 24px rgba(35, 59, 38, .085); transform: translateY(-2px); }
-    .layout-card.quantity-matched { background: linear-gradient(145deg, #edf7ed, #e3f1e5); border-color: #b8d2bc; }
+    .layout-card.quantity-matched { background: linear-gradient(145deg, #f1f8f2, #e7f3e9); border-color: #b8d2bc; }
     .layout-card.quantity-matched::before { align-items: center; background: var(--green); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(32, 37, 30, .18); color: #fff; content: "✓"; display: flex; font-size: 16px; font-weight: 800; height: 30px; justify-content: center; left: 50%; line-height: 1; position: absolute; top: 5px; transform: translateX(-50%); width: 30px; z-index: 1; }
-    .layout-card.quantity-over { background: linear-gradient(145deg, #fff0ef, #fbe4e2); border-color: #dfaaa5; }
+    .layout-card.quantity-over { background: linear-gradient(145deg, #fff3f1, #fbe8e5); border-color: #dfaaa5; }
     .layout-card.quantity-over::before { align-items: center; background: var(--red); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(55, 24, 22, .2); color: #fff; content: "!"; display: flex; font-size: 17px; font-weight: 800; height: 30px; justify-content: center; left: 50%; line-height: 1; position: absolute; top: 5px; transform: translateX(-50%); width: 30px; z-index: 1; }
     .layout-card.quantity-over:hover { border-color: #c97972; box-shadow: 0 10px 24px rgba(105, 43, 38, .12); }
     .layout-card:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(40, 93, 69, .12), 0 9px 24px rgba(35, 59, 38, .08); }
     .layout-card:focus-within .layout-card-head { background: var(--green-soft); }
     .layout-card.quantity-over:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(163, 75, 70, .14), 0 9px 24px rgba(105, 43, 38, .1); }
     .layout-card.quantity-over:focus-within .layout-card-head { background: var(--red-soft); }
-    .layout-card-head { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; gap: 10px; justify-content: space-between; padding: 32px 15px 12px; }
+    .layout-card-head { align-items: flex-start; background: linear-gradient(110deg, #f3f8f5, #f9fbfa); border-bottom: 1px solid var(--line); display: flex; gap: 10px; justify-content: space-between; padding: 32px 15px 12px; }
     .layout-complete-check { align-items: center; background: var(--green); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(32, 37, 30, .18); color: #fff; display: flex; font-size: 16px; font-weight: 800; height: 30px; justify-content: center; left: 50%; line-height: 1; position: absolute; top: 5px; transform: translateX(-50%); width: 30px; z-index: 1; }
     .layout-card-summary { display: grid; flex: 0 0 auto; gap: 5px; justify-items: end; max-width: 58%; }
     .layout-name { align-items: center; display: flex; font-size: 14px; font-weight: 700; gap: 5px; }
@@ -203,7 +242,7 @@
     .layout-form { display: flex; gap: 7px; padding: 12px 14px; }
     .layout-form .scan-input { height: 36px; }
     .layout-form .button { min-height: 36px; padding: 0 10px; }
-    .layout-manual-form { align-items: start; display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) 82px auto; padding: 0 14px 12px; position: relative; }
+    .layout-manual-form { align-items: start; background: #f8faf9; display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) 82px auto; padding: 0 14px 12px; position: relative; }
     .layout-manual-form .scan-input { height: 36px; }
     .layout-manual-form .button { min-height: 36px; padding: 0 10px; }
     .manual-product-picker { min-width: 0; }
@@ -218,8 +257,8 @@
     .manual-product-option-meta { color: var(--muted); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .manual-product-options-empty { color: var(--muted); font-size: 10px; padding: 8px; }
     .layout-card.manual-picker-open { overflow: visible; z-index: 5; }
-    .layout-card-foot { border-top: 1px solid #eef0eb; color: var(--muted); font-size: 10px; padding: 10px 14px; }
-    .layout-record-group + .layout-record-group { border-top: 1px solid #eef0eb; margin-top: 9px; padding-top: 8px; }
+    .layout-card-foot { background: #fff; border-top: 1px solid #e9efeb; color: var(--muted); font-size: 10px; padding: 10px 14px; }
+    .layout-record-group + .layout-record-group { border-top: 1px solid #e9efeb; margin-top: 9px; padding-top: 8px; }
     .layout-record-heading { color: var(--ink); font-size: 10px; font-weight: 800; margin-bottom: 4px; }
     .layout-record-empty { color: var(--muted); padding: 3px 0; }
     .manual-item-details { border-bottom: 1px solid #f0f1ed; }
@@ -231,7 +270,7 @@
     .manual-item-full-name { color: var(--ink); font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
     .manual-item-entry { align-items: center; color: var(--muted); display: flex; font-size: 9px; justify-content: space-between; min-height: 24px; }
     .layout-scan-list { display: grid; gap: 4px; max-height: 230px; overflow-y: auto; }
-    .layout-scan-row { align-items: center; border-bottom: 1px solid #f0f1ed; display: flex; gap: 8px; justify-content: space-between; min-height: 34px; padding: 3px 0; }
+    .layout-scan-row { align-items: center; border-bottom: 1px solid #e9efeb; display: flex; gap: 8px; justify-content: space-between; min-height: 34px; padding: 3px 0; }
     .layout-scan-info { min-width: 0; overflow-wrap: anywhere; }
     .layout-scan-status { color: var(--muted); font-size: 9px; }
     .layout-scan-status.match { color: var(--green); }
@@ -338,10 +377,27 @@
     .schedule-overview-stat { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; min-width: 76px; padding: 8px 12px; text-align: center; }
     .schedule-overview-stat strong { display: block; font-size: 17px; line-height: 1.1; }
     .schedule-overview-stat span { color: #d5e9df; display: block; font-size: 9px; margin-top: 3px; }
-    .schedule-grid { display: grid; gap: 13px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); }
+    .schedule-grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
     .schedule-card { background: linear-gradient(155deg, #fff, #fcfdfb); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 5px 18px rgba(35,59,38,.04); min-width: 0; overflow: hidden; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
     .schedule-card:hover { border-color: #c7dacf; box-shadow: 0 10px 25px rgba(35,59,38,.08); transform: translateY(-2px); }
     .schedule-card.current { border-color: #86b9a3; box-shadow: 0 0 0 2px rgba(42,117,91,.08), 0 8px 22px rgba(35,59,38,.06); }
+    .schedule-card-summary { align-items: center; cursor: pointer; display: flex; gap: 10px; list-style: none; min-height: 65px; padding: 10px 12px; }
+    .schedule-card-summary::-webkit-details-marker { display: none; }
+    .schedule-card-summary:focus-visible { outline: 2px solid #739b7c; outline-offset: -3px; }
+    .schedule-card:not([open]) > :not(.schedule-card-summary) { display: none; }
+    .schedule-summary-copy { flex: 1; min-width: 0; }
+    .schedule-summary-title { color: var(--ink); display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .schedule-summary-meta { color: var(--muted); display: block; font-size: 9px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .schedule-summary-badges { align-items: flex-end; display: flex; flex-direction: column; flex: 0 0 auto; gap: 4px; }
+    .schedule-summary-chevron { color: var(--muted); flex: 0 0 auto; font-size: 16px; transition: transform .18s ease; }
+    .schedule-card[open] > .schedule-card-summary { border-bottom: 1px solid #edf1eb; }
+    .schedule-card[open] > .schedule-card-summary { background: #e8f4ec; border-bottom-color: #c9dfd0; color: #164b3a; }
+    .schedule-card[open] > .schedule-card-summary .schedule-card-number,
+    .schedule-card[open] > .schedule-card-summary .schedule-summary-meta,
+    .schedule-card[open] > .schedule-card-summary .schedule-summary-badges,
+    .schedule-card[open] > .schedule-card-summary .schedule-summary-chevron { display: none; }
+    .schedule-card[open] > .schedule-card-summary .schedule-summary-title { color: #164b3a; font-size: 13px; font-weight: 800; letter-spacing: .35px; text-transform: uppercase; }
+    .schedule-card[open] > .schedule-card-summary .schedule-summary-chevron { transform: rotate(180deg); }
     .schedule-card-head { align-items: center; border-bottom: 1px solid #edf1eb; display: flex; gap: 11px; padding: 14px 15px; }
     .schedule-card-number { align-items: center; background: #eaf3ed; border: 1px solid #dcebe0; border-radius: 9px; color: var(--green); display: inline-flex; flex: 0 0 37px; font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 13px; font-weight: 700; height: 37px; justify-content: center; }
     .schedule-card-title { flex: 1; min-width: 0; }
@@ -375,6 +431,18 @@
     .schedule-empty { background: var(--paper); border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); padding: 35px 18px; text-align: center; }
     .dashboard-page { animation: dashboard-enter .32s ease both; }
     @keyframes dashboard-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .dashboard-hero { align-items: center; background: linear-gradient(112deg, #174b42 0%, #176b5b 62%, #398b73 100%); border: 1px solid rgba(255,255,255,.16); border-radius: 15px; box-shadow: 0 12px 28px rgba(23,76,62,.14); color: #fff; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 20px; min-height: 151px; overflow: hidden; padding: 22px 26px; position: relative; }
+    .dashboard-hero::after { background: rgba(205,236,222,.11); border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 240px; position: absolute; right: 19%; top: -172px; width: 240px; }
+    .dashboard-hero-copy, .dashboard-hero-action { position: relative; z-index: 1; }
+    .dashboard-hero-copy { min-width: 0; }
+    .dashboard-hero-eyebrow { color: #c5e0d4; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; margin-bottom: 8px; text-transform: uppercase; }
+    .dashboard-hero h1 { color: #fff; font-size: clamp(25px, 2.6vw, 32px); letter-spacing: -.35px; }
+    .dashboard-hero .subtitle { color: #d5e9df; font-size: 12px; margin-top: 6px; }
+    .dashboard-hero-action { background: #fff; border-color: rgba(255,255,255,.75); border-radius: 9px; box-shadow: 0 4px 12px rgba(14,55,46,.12); color: #285c4b; min-height: 43px; padding: 0 16px; }
+    .dashboard-hero-action:hover { background: #eaf5ef; border-color: #fff; }
+    .dashboard-hero .dashboard-overview { align-items: center; border-top: 1px solid rgba(255,255,255,.18); display: flex; gap: 16px; justify-content: space-between; margin: 17px 0 0; padding-top: 11px; }
+    .dashboard-hero .dashboard-overview p { color: #d5e9df; font-size: 10px; margin: 0; }
+    .dashboard-hero .dashboard-date { color: #d5e9df; font-size: 10px; white-space: nowrap; }
     .dashboard-overview { align-items: flex-end; display: flex; justify-content: space-between; margin: -5px 0 20px; }
     .dashboard-overview p { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
     .dashboard-date { color: var(--muted); font-size: 11px; }
@@ -422,10 +490,13 @@
     @media (max-width: 900px) {
       .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .dashboard-charts { grid-template-columns: minmax(0, .9fr) minmax(0, 1.5fr); }
-      .schedule-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); }
+      .schedule-grid { grid-template-columns: minmax(0, 1fr); }
     }
     @media (max-width: 650px) {
       .dashboard-overview { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .dashboard-hero { align-items: flex-start; flex-direction: column; gap: 14px; margin-bottom: 15px; min-height: 0; padding: 18px; }
+      .dashboard-hero .dashboard-overview { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .dashboard-hero-action { align-self: flex-start; }
       .dashboard-metrics { gap: 8px; }
       .dashboard-metric { padding: 13px; }
       .dashboard-metric-value { font-size: 23px; }
@@ -437,6 +508,7 @@
       .schedule-overview-stat { flex: 1; min-width: 65px; padding: 7px 9px; }
       .schedule-grid { grid-template-columns: minmax(0, 1fr); }
       .schedule-card-head, .schedule-card-body { padding-left: 12px; padding-right: 12px; }
+      .schedule-card-summary { padding-left: 10px; padding-right: 10px; }
       .schedule-card-foot { align-items: flex-start; flex-direction: column; padding-left: 12px; padding-right: 12px; }
       .schedule-owner { max-width: 100%; }
       .schedule-actions { width: 100%; }
@@ -482,6 +554,29 @@
       .today { display: none; }
       .top-account-email { max-width: 145px; }
       .page-head { align-items: flex-start; flex-direction: column; gap: 15px; margin-bottom: 17px; }
+      .layout-page-head { align-items: flex-start; flex-direction: column; gap: 15px; min-height: 0; padding: 18px; }
+      .layout-page-eyebrow { font-size: 9px; letter-spacing: .9px; margin-bottom: 6px; }
+      .layout-page-head h1 { font-size: 25px; }
+      .layout-page-head .subtitle { font-size: 11px; line-height: 1.5; max-width: 340px; }
+      .result-page-head { align-items: flex-start; flex-direction: column; gap: 14px; min-height: 0; padding: 18px; }
+      .result-page-eyebrow { font-size: 9px; letter-spacing: .9px; margin-bottom: 6px; }
+      .result-page-head h1 { font-size: 25px; }
+      .result-page-head .subtitle { font-size: 11px; line-height: 1.5; }
+      .result-page-head .head-buttons { width: auto; }
+      .archive-page-head { align-items: flex-start; flex-direction: column; gap: 14px; min-height: 0; padding: 18px; }
+      .archive-page-eyebrow { font-size: 9px; letter-spacing: .9px; margin-bottom: 6px; }
+      .archive-page-head h1 { font-size: 25px; }
+      .archive-page-head .subtitle { font-size: 11px; line-height: 1.5; }
+      .master-page-head { min-height: 0; }
+      .master-page-head .archive-page-heading { max-width: none; }
+      .master-page-head .head-buttons { align-items: flex-end; display: flex; flex-direction: column; gap: 8px; position: relative; right: auto; top: auto; width: 100%; }
+      .master-page-head .head-buttons .button { flex: 0 0 auto; position: static; }
+      .master-page-head .master-upload-button { order: 1; }
+      .master-page-head .master-delete-button { order: 2; }
+      .layout-rack-count { align-items: center; flex-direction: row; gap: 8px; min-width: 0; padding: 8px 12px; }
+      .layout-rack-count strong { font-size: 14px; }
+      .layout-rack-count-label { font-size: 10px; }
+      .layout-master-notice { align-items: flex-start; padding: 12px; }
       h1 { font-size: 27px; }
       .head-buttons { width: 100%; }
       .head-buttons .button { flex: 1; }
@@ -494,8 +589,7 @@
       .progress-copy { min-width: 108px; }
       .layout-grid { grid-template-columns: minmax(0, 1fr); }
       .layout-form { padding: 10px; }
-      .layout-manual-form { grid-template-columns: minmax(0, 1fr) 75px; padding: 0 10px 10px; }
-      .layout-manual-form .button { grid-column: 1 / -1; }
+      .layout-manual-form { grid-template-columns: minmax(0, 1fr) 75px auto; padding: 0 10px 10px; }
       .table-toolbar { align-items: flex-start; flex-direction: column; }
       .filters { width: 100%; }
       .search-wrap { flex: 1; }
@@ -655,7 +749,10 @@
     html[data-theme="dark"] .schedule-empty { background: linear-gradient(155deg, #192a27, #172623); border-color: var(--line); color: var(--ink); }
     html[data-theme="dark"] .schedule-card.current { border-color: #4e8e76; }
     html[data-theme="dark"] .schedule-card-head,
-    html[data-theme="dark"] .schedule-card-foot { border-color: #304440; }
+    html[data-theme="dark"] .schedule-card-foot,
+    html[data-theme="dark"] .schedule-card[open] > .schedule-card-summary { border-color: #304440; }
+    html[data-theme="dark"] .schedule-card[open] > .schedule-card-summary { background: #25463a; color: #d9f1e4; }
+    html[data-theme="dark"] .schedule-card[open] > .schedule-card-summary .schedule-summary-title { color: #d9f1e4; }
     html[data-theme="dark"] .schedule-mode-box { background: linear-gradient(110deg, #203832, #1d302b); border-color: #304b40; }
     html[data-theme="dark"] .schedule-stat { background: #1d2e2a; border-color: #304440; }
     html[data-theme="dark"] .schedule-card-number { background: #203a34; border-color: #31574b; color: #a9dec9; }
@@ -670,6 +767,8 @@
     html[data-theme="dark"] .category-chip,
     html[data-theme="dark"] .activity-type,
     html[data-theme="dark"] .dashboard-chart-tag { background: #203a34; border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .layout-master-notice-icon { background: #203a34; border-color: #31574b; color: #a9dec9; }
+    html[data-theme="dark"] .layout-master-notice { background: linear-gradient(105deg, #192a27, #1b302b); border-color: #304440; }
     html[data-theme="dark"] .product-thumb,
     html[data-theme="dark"] .metric-mark,
     html[data-theme="dark"] .dashboard-metric-icon,
@@ -684,6 +783,15 @@
     html[data-theme="dark"] .layout-card.quantity-matched::before,
     html[data-theme="dark"] .layout-card.quantity-over::before,
     html[data-theme="dark"] .layout-complete-check { border-color: var(--paper); }
+    html[data-theme="dark"] .layout-card-head { background: linear-gradient(110deg, #1b2d29, #1a2926); border-color: #304440; }
+    html[data-theme="dark"] .layout-card-foot { background: #192a27; }
+    html[data-theme="dark"] .layout-form,
+    html[data-theme="dark"] .layout-manual-form { background: #172623; }
+    html[data-theme="dark"] .layout-scan-row,
+    html[data-theme="dark"] .layout-record-group + .layout-record-group { border-color: #304440; }
+    html[data-theme="dark"] .layout-quantity-status.match { color: #a9dec9; }
+    html[data-theme="dark"] .layout-quantity-status.shortage { color: #f0d48e; }
+    html[data-theme="dark"] .layout-quantity-status.different { color: #f0aaa1; }
     html[data-theme="dark"] .layout-card:focus-within .layout-card-head { background: #203b35; }
     html[data-theme="dark"] .layout-card.quantity-over:focus-within .layout-card-head { background: #4a302e; }
     html[data-theme="dark"] .top-logout,
@@ -801,6 +909,8 @@
   <script>
     const STORAGE_KEY = "ruangstok-sn-v2";
     const THEME_STORAGE_KEY = "ruangstok-theme";
+    const PAGE_STORAGE_KEY = "ruangstok-last-page:";
+    const RESTORABLE_PAGES = new Set(["opname", "dashboard", "workspaces", "products", "layouts", "recap", "about", "admin-users", "completed-sessions", "history"]);
     const applyTheme = (theme, persist = false) => {
       const activeTheme = theme === "dark" ? "dark" : "light";
       document.documentElement.dataset.theme = activeTheme;
@@ -1306,6 +1416,7 @@
         lastSyncedState = stableSerialize(state);
         sharedStateReady = true;
         syncErrorShown = false;
+        currentPage = restoreLastPage(session);
         unlockApp(session);
         render();
         refreshTimer = setInterval(refreshSharedState, 8000);
@@ -1572,7 +1683,7 @@
       });
       const latestScans = [...state.scanEvents].slice(-8).reverse();
       return `${navMarkup()}
-        <section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Result SO · Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ. Perhitungan: ${countModeLabel(state.countMode).toLocaleLowerCase("id-ID")}.</p></div><div class="head-buttons"><button class="button button-secondary" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
+        <section class="page-head result-page-head"><div class="result-page-heading"><div class="result-page-eyebrow">Result SO · Rekonsiliasi inventaris</div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Tinjau hasil scan per layout dan rekonsiliasi dengan VEF, Box, dan PJ. Perhitungan: ${countModeLabel(state.countMode).toLocaleLowerCase("id-ID")}.</p></div><div class="head-buttons"><button class="button result-export-button" id="export-button" ${!stats.total ? "disabled" : ""}>↓ <span>Ekspor CSV</span></button></div></section>
         ${renderSessionAccessNotice()}
         <section class="session-strip"><div class="session-info"><div class="session-kicker">Sesi opname · ${escapeHtml(formatDate(state.activeSession.startedAt, { day: "numeric", month: "short", year: "numeric" }))}</div><div class="session-title">${active ? "Rekonsiliasi sedang berjalan" : "Rekonsiliasi selesai"}</div><div class="session-meta">${state.importFile ? `${escapeHtml(state.importFile)}${state.importMessage ? ` · ${escapeHtml(state.importMessage)}` : ""}` : "Unggah workbook di Master VEF untuk memulai sesi."} · Pemilik: ${escapeHtml(sessionOwnerName(state.activeSession))}</div></div><div class="session-actions"><span class="status-pill"><span class="status-dot" style="${active ? "" : "background:#fff"}"></span>${active ? "Sedang berjalan" : "Selesai"}</span>${active ? `<button class="button" id="finish-button" ${!canEdit || !stats.total ? "disabled" : ""}>Selesaikan opname <span>→</span></button>` : `<button class="button" id="new-session-button" ${!canEdit ? "disabled" : ""}><span class="icon-plus">+</span> Mulai sesi baru</button>`}</div></section>
         <section class="metric-grid" aria-label="Ringkasan stock opname">
@@ -1597,7 +1708,7 @@
       }
       for (const serials of serialsByProduct.values()) serials.sort((a, b) => a.localeCompare(b, "id-ID"));
       const filtered = state.products.filter((product) => !query || `${product.name} ${product.sku} ${product.itemGroup || ""} ${product.brand} ${product.warehouse}`.toLocaleLowerCase("id-ID").includes(query) || (serialsByProduct.get(product.id) || []).some((serial) => serial.toLocaleLowerCase("id-ID").includes(query)));
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Master VEF · Serial Number dipetakan ke item code, brand, dan warehouse.</p></div><div class="head-buttons"><button class="button button-danger" id="delete-master-button" ${!canEdit || !state.products.length ? "disabled" : ""}>Hapus semua data</button><button class="button button-primary" id="import-button" ${!canEdit ? "disabled title=\"Sesi ini hanya dapat diubah oleh pemilik atau Super Admin\"" : ""}>↑ Unggah workbook</button></div></section>${renderSessionAccessNotice()}
+      return `${navMarkup()}<section class="page-head archive-page-head master-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Master VEF · Data inventaris</div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Serial Number dipetakan ke item code, brand, dan warehouse.</p></div><div class="head-buttons"><button class="button master-delete-button" id="delete-master-button" ${!canEdit || !state.products.length ? "disabled" : ""}>Hapus semua data</button><button class="button master-upload-button" id="import-button" ${!canEdit ? "disabled title=\"Sesi ini hanya dapat diubah oleh pemilik atau Super Admin\"" : ""}>↑ Unggah workbook</button></div></section>${renderSessionAccessNotice()}
         <section class="table-section"><div class="table-toolbar"><div class="table-title">Master barang <span class="table-count">${filtered.length} item · ${filtered.filter(isLaptopProduct).length} laptop · ${filtered.filter((product) => !isLaptopProduct(product)).length} bukan laptop</span></div><div class="filters"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Cari item code atau SN" value="${escapeHtml(searchTerm)}" aria-label="Cari master"></div></div></div><div class="table-scroll"><table><thead><tr><th>Item code</th><th>Item name</th><th>Item Group</th><th>Brand</th><th>Warehouse</th><th>VEF</th><th>Serial Number</th></tr></thead><tbody>${filtered.length ? filtered.map((product) => { const serials = serialsByProduct.get(product.id) || []; const laptop = isLaptopProduct(product); return `<tr class="${laptop ? "" : "non-laptop-row"}"><td class="number-cell">${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div>${laptop ? "" : `<span class="row-status non-laptop">Bukan laptop</span>`}</td><td>${escapeHtml(product.itemGroup || "-")}</td><td>${escapeHtml(product.brand || "-")}</td><td>${escapeHtml(product.warehouse || "-")}</td><td>${formatNumber(product.stock)}</td><td>${serials.length ? `<details class="serial-details"><summary>${formatNumber(serials.length)} SN · tampilkan</summary><div class="serial-list">${serials.map((serial) => `<span class="serial-token">${escapeHtml(serial)}</span>`).join("")}</div></details>` : "-"}</td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="7">Unggah workbook untuk memuat master VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span>${state.serialMaster ? Object.keys(state.serialMaster).length : 0} serial terdaftar</span><span>${escapeHtml(state.importFile || "Belum ada workbook")}</span></div></section>`;
     }
 
@@ -1669,7 +1780,7 @@
         const manualDisabled = !state.products.length || !active || !canEdit;
         return `<section class="layout-card ${cardClasses}"><div class="layout-card-head"><div><div class="layout-name"><span>Rack</span><input class="qty-input layout-number-input" id="rack-number-${escapeHtml(layout)}" type="number" min="1" step="1" inputmode="numeric" aria-label="Nomor Rack ${escapeHtml(layout)}" data-layout-number="${escapeHtml(layout)}" value="${escapeHtml(rackNumber)}" ${!active || !canEdit ? "disabled" : ""}></div><div class="layout-location">Rack pemindaian</div></div><div class="layout-card-summary"><div class="layout-quantity-row"><label class="layout-quantity-label" for="quantity-${escapeHtml(layout)}">Quantity</label><input class="qty-input layout-quantity-input" id="quantity-${escapeHtml(layout)}" type="number" min="0" step="1" inputmode="numeric" aria-label="Quantity target ${escapeHtml(rackName)}" data-layout-quantity="${escapeHtml(layout)}" value="${target ?? ""}" ${!active || !canEdit ? "disabled" : ""}></div><span class="layout-quantity-status ${quantityStatus.className}" data-layout-quantity-status="${escapeHtml(layout)}">${quantityStatus.label}</span><span class="layout-count">${matched} cocok${nonLaptopScans ? ` · ${nonLaptopScans} bukan laptop` : ""}${issues ? ` · ${issues} masalah` : ""}</span></div></div><form class="layout-form" data-layout-form="${escapeHtml(layout)}"><input class="scan-input layout-input" autocomplete="off" placeholder="${hasRackNumber && hasTarget ? `Pindai SN di ${escapeHtml(rackName)}` : !hasRackNumber ? "Isi nomor Rack dahulu" : "Isi quantity target dahulu"}" aria-label="Pindai Serial Number di ${escapeHtml(rackName)}" ${scanDisabled ? "disabled" : ""}><button class="button button-primary" type="submit" ${scanDisabled ? "disabled" : ""}>Catat Scan</button></form><form class="layout-manual-form" data-manual-form="${escapeHtml(layout)}"><div class="manual-product-picker"><input class="scan-input" type="search" data-manual-product placeholder="Cari item code atau nama barang" aria-label="Cari item dari VEF Master untuk ${escapeHtml(rackName)}" autocomplete="off" aria-autocomplete="list" aria-expanded="false" ${manualDisabled ? "disabled" : ""}><div class="manual-product-options" role="listbox" aria-label="Hasil pencarian VEF Master"></div></div><input class="scan-input" type="number" min="1" step="1" inputmode="numeric" data-manual-quantity placeholder="Qty" aria-label="Quantity manual untuk ${escapeHtml(rackName)}" ${manualDisabled ? "disabled" : ""}><button class="button button-secondary" type="submit" ${manualDisabled ? "disabled" : ""}>Catat Manual</button></form><div class="layout-card-foot"><div class="layout-record-group"><div class="layout-record-heading">Scan</div><div class="layout-scan-list">${scanRows}</div></div><div class="layout-record-group"><div class="layout-record-heading">Manual</div><div class="layout-scan-list">${manualRows}</div></div></div></section>`;
       }).join("");
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="category-chip">${state.layouts.length} Rack</span></section>${renderSessionAccessNotice()}${!state.products.length ? `<div class="history-summary"><strong>Master VEF belum dimuat.</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></div>` : ""}<section class="layout-grid">${cards}</section>`;
+      return `${navMarkup()}<section class="page-head layout-page-head"><div class="layout-page-heading"><div class="layout-page-eyebrow">Pemindaian inventaris</div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Isi nomor Rack dan quantity target sebelum mulai scan.</p></div><span class="layout-rack-count"><strong>${state.layouts.length}</strong><span class="layout-rack-count-label">Total Rack</span></span></section>${renderSessionAccessNotice()}${!state.products.length ? `<div class="history-summary layout-master-notice" role="status"><span class="layout-master-notice-icon" aria-hidden="true">i</span><span class="layout-master-notice-copy"><strong>Master VEF belum dimuat</strong><span>Unggah workbook di halaman Master VEF sebelum mulai scan.</span></span></div>` : ""}<section class="layout-grid">${cards}</section>`;
     }
     function getLayoutQuantityStatus(scanCount, target) {
       if (target === undefined || target === null || target === "") return { className: "pending", label: `Quantity belum diisi · ${scanCount} scan` };
@@ -1736,18 +1847,18 @@
     function renderRecap() {
       const exceptions = state.products.filter((product) => isCountedProduct(product) && (varianceFor(product) !== 0 || product.note));
       const canEdit = canEditActiveSession();
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">Rekap selisih · ${countModeLabel(state.countMode)} yang perlu diperiksa dengan catatan opname.</p></div><div class="head-buttons"><span class="category-chip">${exceptions.length} item perlu ditinjau</span></div></section>${renderSessionAccessNotice()}<section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}" ${canEdit ? "" : "disabled"}></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.filter((product) => isCountedProduct(product)).length} item diperiksa</span></div></section>`;
+      return `${navMarkup()}<section class="page-head archive-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Rekap selisih · Pemeriksaan opname</div><h1>${escapeHtml(activeWorkspaceName())}</h1><p class="subtitle">${countModeLabel(state.countMode)} yang perlu diperiksa dengan catatan opname.</p></div><span class="category-chip">${exceptions.length} item perlu ditinjau</span></section>${renderSessionAccessNotice()}<section class="table-section"><div class="table-toolbar"><div class="table-title">Item belum balance <span class="table-count">VEF dibanding SO + BOX + PJ</span></div></div><div class="table-scroll"><table><thead><tr><th>No</th><th>Item code</th><th>Item name</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Check</th><th>Note</th></tr></thead><tbody>${exceptions.length ? exceptions.map((product, index) => { const variance = varianceFor(product); return `<tr><td class="number-cell">${index + 1}</td><td>${escapeHtml(product.sku)}</td><td><div class="product-name">${escapeHtml(product.name)}</div></td><td>${formatNumber(product.stock)}</td><td>${formatNumber(product.count || 0)}</td><td>${formatNumber(product.box || 0)}</td><td>${formatNumber(product.pj || 0)}</td><td><span class="variance ${variance < 0 ? "negative" : "positive"}">${variance > 0 ? "+" : ""}${formatNumber(variance)}</span></td><td><input class="note-input" aria-label="Catatan ${escapeHtml(product.sku)}" data-note-sku="${escapeHtml(product.sku)}" placeholder="Tambah catatan" value="${escapeHtml(product.note || "")}" ${canEdit ? "" : "disabled"}></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="9">Belum ada selisih. Semua item sesuai dengan VEF.</td></tr>`}</tbody></table></div><div class="table-footer"><span class="auto-save"><span class="save-dot"></span> Catatan tersimpan otomatis</span><span>${state.products.filter((product) => isCountedProduct(product)).length} item diperiksa</span></div></section>`;
     }
 
     function renderHistory() {
       const workspaceNames = new Map(state.workspaces.map((workspace) => [workspace.id, workspace.name]));
       const activities = state.workspaces.flatMap((workspace) => (workspace.data.historyEvents || []).map((activity) => ({ ...activity, workspaceName: workspaceNames.get(activity.workspaceId) || workspace.name }))).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      return `${navMarkup()}<section class="page-head"><div><h1>Riwayat Perubahan</h1><p class="subtitle">Catatan perubahan data dan aktivitas sesi, diurutkan dari yang terbaru.</p></div></section><div class="history-summary"><div><strong>${activities.length} aktivitas tercatat</strong><div style="font-size:10px;margin-top:3px">Riwayat perubahan tersimpan per sesi di perangkat ini.</div></div><span class="category-chip">${activities.length ? `Perubahan terakhir: ${escapeHtml(formatDate(activities[0].createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }))}` : "Belum ada perubahan"}</span></div><section class="table-section"><div class="table-toolbar"><div class="table-title">Riwayat perubahan <span class="table-count">${activities.length} aktivitas · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Waktu</th><th>Sesi</th><th>Aktivitas</th><th>Detail perubahan</th></tr></thead><tbody>${activities.length ? activities.map((activity) => `<tr><td class="activity-time">${escapeHtml(formatDate(activity.createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</td><td>${escapeHtml(activity.workspaceName || "Sesi opname")}</td><td><span class="activity-type">${escapeHtml(activity.type)}</span></td><td class="activity-details">${escapeHtml(activity.description)}</td></tr>`).join("") : `<tr><td class="empty-row" colspan="4">Belum ada perubahan data.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head archive-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Aktivitas dan audit</div><h1>Riwayat Perubahan</h1><p class="subtitle">Catatan perubahan data dan aktivitas sesi, diurutkan dari yang terbaru.</p></div></section><div class="history-summary"><div><strong>${activities.length} aktivitas tercatat</strong><div style="font-size:10px;margin-top:3px">Riwayat perubahan tersimpan per sesi di perangkat ini.</div></div><span class="category-chip">${activities.length ? `Perubahan terakhir: ${escapeHtml(formatDate(activities[0].createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }))}` : "Belum ada perubahan"}</span></div><section class="table-section"><div class="table-toolbar"><div class="table-title">Riwayat perubahan <span class="table-count">${activities.length} aktivitas · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Waktu</th><th>Sesi</th><th>Aktivitas</th><th>Detail perubahan</th></tr></thead><tbody>${activities.length ? activities.map((activity) => `<tr><td class="activity-time">${escapeHtml(formatDate(activity.createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</td><td>${escapeHtml(activity.workspaceName || "Sesi opname")}</td><td><span class="activity-type">${escapeHtml(activity.type)}</span></td><td class="activity-details">${escapeHtml(activity.description)}</td></tr>`).join("") : `<tr><td class="empty-row" colspan="4">Belum ada perubahan data.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessions() {
       const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
-      return `${navMarkup()}<section class="page-head"><div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Item dihitung</th><th>Unit VEF dihitung</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); const countMode = session.countMode === "all" ? "all" : "laptops"; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU <div class="product-sku">${countModeLabel(countMode)}</div></td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head archive-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Arsip stock opname</div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Item dihitung</th><th>Unit VEF dihitung</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); const countMode = session.countMode === "all" ? "all" : "laptops"; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU <div class="product-sku">${countModeLabel(countMode)}</div></td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessionView() {
@@ -1967,7 +2078,8 @@
       printWindow.document.open();
       printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${title} · Stock Opname</title><style>
         *{box-sizing:border-box}body{color:#20312d;font:11px/1.45 "Segoe UI",Arial,sans-serif;margin:24px}.document-header{border-bottom:3px solid #176b5b;margin-bottom:16px;padding-bottom:13px}.brand{color:#176b5b;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}.document-header h1{font-size:23px;line-height:1.2;margin:5px 0}.subtitle{color:#64746f;font-size:11px;margin:0}.metadata{display:grid;gap:8px;grid-template-columns:repeat(4,1fr);margin:15px 0}.metadata div,.summary-card{background:#f3f7f5;border:1px solid #dce7e2;border-radius:6px;padding:8px 10px}.metadata span,.summary-card span{color:#63736d;display:block;font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}.metadata strong{display:block;font-size:10px;margin-top:3px;overflow-wrap:anywhere}.summary{display:grid;gap:7px;grid-template-columns:repeat(4,1fr);margin:0 0 18px}.summary-card strong{display:block;font-size:16px;margin-top:3px}.section{margin:18px 0 0}.section h2{border-bottom:1px solid #cbd9d3;color:#176b5b;font-size:13px;margin:0 0 8px;padding-bottom:5px}.section-note{color:#63736d;font-size:9px;margin:-3px 0 8px}.table-wrap{overflow:visible}table{border-collapse:collapse;table-layout:auto;text-align:left;width:100%}thead{display:table-header-group}tr{break-inside:avoid}th,td{border:1px solid #d7e0dc;font-size:8px;padding:5px;vertical-align:top;overflow-wrap:anywhere}th{background:#eaf2ee;color:#304840;font-size:7px;letter-spacing:.3px;text-transform:uppercase}.empty{text-align:center;color:#63736d}.signatures{break-inside:avoid;display:grid;gap:18px;grid-template-columns:repeat(3,1fr);margin-top:32px}.signature{min-height:76px;text-align:center}.signature .line{border-top:1px solid #82928b;margin:48px 12px 5px}.signature strong,.signature span{display:block;font-size:9px}.signature span{color:#63736d}.footer{border-top:1px solid #d7e0dc;color:#718079;font-size:8px;margin-top:20px;padding-top:7px;text-align:right}@page{size:landscape;margin:12mm}@media print{body{margin:0}.section{break-inside:auto}.section h2{break-after:avoid}.metadata div,.summary-card{background:#f3f7f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}th{background:#eaf2ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-      </style></head><body><header class="document-header"><div class="brand">Stock Opname · Rekonsiliasi Serial Number</div><h1>${title}</h1><p class="subtitle">Laporan hasil stock opname dan rekonsiliasi persediaan</p></header><section class="metadata"><div><span>Nama akun</span><strong>${owner}</strong></div><div><span>PIC 1</span><strong>${pic1}</strong></div><div><span>PIC 2</span><strong>${pic2}</strong></div><div><span>Status sesi</span><strong>Selesai</strong></div><div><span>Mulai</span><strong>${startedAt}</strong></div><div><span>Selesai</span><strong>${finishedAt}</strong></div><div><span>Jumlah item</span><strong>${formatNumber(products.length)} item</strong></div><div><span>Jumlah scan</span><strong>${formatNumber(scans.length)} scan</strong></div></section><section class="summary"><div class="summary-card"><span>Unit VEF</span><strong>${formatNumber(session.expected || 0)}</strong></div><div class="summary-card"><span>Scan cocok</span><strong>${formatNumber(session.scanned || 0)}</strong></div><div class="summary-card"><span>Item kurang</span><strong>${formatNumber(session.shortages || 0)}</strong></div><div class="summary-card"><span>Item lebih</span><strong>${formatNumber(session.surpluses || 0)}</strong></div></section><section class="section"><h2>1. Scan Layout</h2><p class="section-note">Rincian pemindaian serial number berdasarkan rack dan target quantity.</p><div class="table-wrap"><table><thead><tr><th>Rack</th><th>Target</th><th>Serial Number</th><th>Item Code</th><th>Nama Item</th><th>Hasil</th><th>Waktu Scan</th></tr></thead><tbody>${scanRows || `<tr><td class="empty" colspan="7">Belum ada data Scan Layout.</td></tr>`}</tbody></table></div></section><section class="section"><h2>2. Result SO</h2><p class="section-note">Hasil opname, data VEF, perhitungan selisih, dan status setiap item.</p><div class="table-wrap"><table><thead><tr><th>No</th><th>Item Code</th><th>Nama Item</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Status</th><th>Catatan</th></tr></thead><tbody>${resultRows || `<tr><td class="empty" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div></section><section class="section"><h2>3. Rekap Selisih · ${formatNumber(recapProducts.length)} item perlu ditinjau</h2><p class="section-note">Item laptop yang memiliki selisih atau catatan tindak lanjut.</p><div class="table-wrap"><table><thead><tr><th>No</th><th>Item Code</th><th>Nama Item</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Catatan</th></tr></thead><tbody>${recapRows || `<tr><td class="empty" colspan="9">Belum ada selisih. Semua item laptop sesuai dengan VEF.</td></tr>`}</tbody></table></div></section><section class="signatures"><div class="signature"><div class="line"></div><strong>${pic1}</strong><span>PIC 1</span></div><div class="signature"><div class="line"></div><strong>${pic2}</strong><span>PIC 2</span></div><div class="signature"><div class="line"></div><strong>${owner}</strong><span>Nama Akun / Pelaksana</span></div></section><div class="footer">Dicetak ${printDate} · Stock Opname</div></body></html>`);
+        .print-watermark{display:none}@page{margin-top:16mm}@media print{.print-watermark{color:#718079;display:block;font-size:8px;font-weight:600;line-height:1;position:fixed;right:0;top:-10mm}}
+      </style></head><body><div class="print-watermark">© M-Maz</div><header class="document-header"><div class="brand">Stock Opname · Rekonsiliasi Serial Number</div><h1>${title}</h1><p class="subtitle">Laporan hasil stock opname dan rekonsiliasi persediaan</p></header><section class="metadata"><div><span>Nama akun</span><strong>${owner}</strong></div><div><span>PIC 1</span><strong>${pic1}</strong></div><div><span>PIC 2</span><strong>${pic2}</strong></div><div><span>Status sesi</span><strong>Selesai</strong></div><div><span>Mulai</span><strong>${startedAt}</strong></div><div><span>Selesai</span><strong>${finishedAt}</strong></div><div><span>Jumlah item</span><strong>${formatNumber(products.length)} item</strong></div><div><span>Jumlah scan</span><strong>${formatNumber(scans.length)} scan</strong></div></section><section class="summary"><div class="summary-card"><span>Unit VEF</span><strong>${formatNumber(session.expected || 0)}</strong></div><div class="summary-card"><span>Scan cocok</span><strong>${formatNumber(session.scanned || 0)}</strong></div><div class="summary-card"><span>Item kurang</span><strong>${formatNumber(session.shortages || 0)}</strong></div><div class="summary-card"><span>Item lebih</span><strong>${formatNumber(session.surpluses || 0)}</strong></div></section><section class="section"><h2>1. Scan Layout</h2><p class="section-note">Rincian pemindaian serial number berdasarkan rack dan target quantity.</p><div class="table-wrap"><table><thead><tr><th>Rack</th><th>Target</th><th>Serial Number</th><th>Item Code</th><th>Nama Item</th><th>Hasil</th><th>Waktu Scan</th></tr></thead><tbody>${scanRows || `<tr><td class="empty" colspan="7">Belum ada data Scan Layout.</td></tr>`}</tbody></table></div></section><section class="section"><h2>2. Result SO</h2><p class="section-note">Hasil opname, data VEF, perhitungan selisih, dan status setiap item.</p><div class="table-wrap"><table><thead><tr><th>No</th><th>Item Code</th><th>Nama Item</th><th>Warehouse</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Status</th><th>Catatan</th></tr></thead><tbody>${resultRows || `<tr><td class="empty" colspan="11">Data Result SO tidak tersedia.</td></tr>`}</tbody></table></div></section><section class="section"><h2>3. Rekap Selisih · ${formatNumber(recapProducts.length)} item perlu ditinjau</h2><p class="section-note">Item laptop yang memiliki selisih atau catatan tindak lanjut.</p><div class="table-wrap"><table><thead><tr><th>No</th><th>Item Code</th><th>Nama Item</th><th>VEF</th><th>SO</th><th>BOX</th><th>PJ</th><th>Selisih</th><th>Catatan</th></tr></thead><tbody>${recapRows || `<tr><td class="empty" colspan="9">Belum ada selisih. Semua item laptop sesuai dengan VEF.</td></tr>`}</tbody></table></div></section><section class="signatures"><div class="signature"><div class="line"></div><strong>${pic1}</strong><span>PIC 1</span></div><div class="signature"><div class="line"></div><strong>${pic2}</strong><span>PIC 2</span></div><div class="signature"><div class="line"></div><strong>${owner}</strong><span>Nama Akun / Pelaksana</span></div></section><div class="footer">Dicetak ${printDate} · Stock Opname</div></body></html>`);
       printWindow.document.close();
     }
 
@@ -2041,8 +2153,7 @@
         <span class="dashboard-chart-count">${stats.progress}% · ${formatNumber(stats.scannedSerials)}/${formatNumber(stats.targetSerials)} SN</span>
       </div>`).join("");
       return `${navMarkup()}<div class="dashboard-page">
-        <section class="page-head"><div><h1>Dashboard Workspace</h1><p class="subtitle">Ringkasan aktivitas dan progres stock opname seluruh sesi.</p></div><div class="head-buttons"><button class="button button-secondary" data-page-link="workspaces">Kelola Jadwal →</button></div></section>
-        <div class="dashboard-overview"><p>Pantau pemindaian dan rekonsiliasi dari satu tempat.</p><span class="dashboard-date">${formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" })}</span></div>
+        <section class="page-head dashboard-hero"><div class="dashboard-hero-copy"><div class="dashboard-hero-eyebrow">Ringkasan Stock Opname</div><h1>Dashboard Workspace</h1><p class="subtitle">Ringkasan aktivitas dan progres stock opname seluruh sesi.</p><div class="dashboard-overview"><p>Pantau pemindaian dan rekonsiliasi dari satu tempat.</p><span class="dashboard-date">${formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" })}</span></div></div><button class="button dashboard-hero-action" data-page-link="workspaces">Kelola Jadwal →</button></section>
         <section class="dashboard-metrics" aria-label="Statistik seluruh workspace">
           <article class="dashboard-metric"><div class="dashboard-metric-label">Total workspace <span class="dashboard-metric-icon">▦</span></div><div class="dashboard-metric-value">${state.workspaces.length}</div><div class="dashboard-metric-note">${total.active} sesi berjalan · ${total.completed} sesi selesai</div></article>
           <article class="dashboard-metric"><div class="dashboard-metric-label">SKU masuk perhitungan <span class="dashboard-metric-icon">▤</span></div><div class="dashboard-metric-value">${formatNumber(total.countedSkus)}</div><div class="dashboard-metric-note">${formatNumber(total.products)} item di seluruh master · sesuai mode tiap sesi</div></article>
@@ -2074,11 +2185,18 @@
         const statusClass = isCompleted ? "match" : data.products.length ? "different" : "pending";
         const serials = Object.keys(data.serialMaster || {}).length;
         const countMode = data.countMode === "all" ? "all" : "laptops";
+        const summaryPicNames = (workspace.picNames || []).filter(Boolean).map(escapeHtml).join(" & ") || "PIC belum diisi";
         const modeDisabled = !canEdit || isCompleted;
         const deleteButton = isSuperAdmin()
           ? `<button class="button button-danger" type="button" data-delete-workspace="${escapeHtml(workspace.id)}" ${state.workspaces.length <= 1 ? 'disabled title="Minimal satu sesi harus dipertahankan."' : ""}>Hapus</button>`
           : "";
-        return `<article class="schedule-card ${isCurrent ? "current" : ""}">
+        return `<details class="schedule-card ${isCurrent ? "current" : ""}">
+          <summary class="schedule-card-summary" aria-label="Sesi ${index + 1}, ${escapeHtml(workspace.name || `Sesi ${index + 1}`)}, ${status}. Klik untuk melihat detail.">
+            <span class="schedule-card-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+            <span class="schedule-summary-copy"><strong class="schedule-summary-title">${escapeHtml(workspace.name || `Sesi ${index + 1}`)}</strong><span class="schedule-summary-meta">${countModeLabel(countMode)} · ${formatNumber(stats.countedSkus)} item · ${formatNumber(serials)} SN · ${summaryPicNames}</span></span>
+            <span class="schedule-summary-badges"><span class="row-status ${statusClass}">${status}</span>${isCurrent ? '<span class="schedule-current-badge">Sedang dipilih</span>' : ""}</span>
+            <span class="schedule-summary-chevron" aria-hidden="true">⌄</span>
+          </summary>
           <header class="schedule-card-head">
             <span class="schedule-card-number" aria-label="Sesi ${index + 1}">${String(index + 1).padStart(2, "0")}</span>
             <div class="schedule-card-title">
@@ -2107,7 +2225,7 @@
             <div class="schedule-progress"><div class="schedule-progress-head"><span>Progres serial number</span><strong>${stats.progress}% · ${formatNumber(stats.scannedSerials)} / ${formatNumber(stats.targetSerials)}</strong></div><div class="dashboard-bar-track" role="progressbar" aria-label="Progres ${escapeHtml(workspace.name || `Sesi ${index + 1}`)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.progress}"><div class="dashboard-bar-fill" style="width:${stats.progress}%"></div></div></div>
           </div>
           <footer class="schedule-card-foot"><span class="schedule-owner">Pemilik sesi · ${escapeHtml(sessionOwnerName(data.activeSession))}</span><div class="schedule-actions"><button class="button ${isCurrent ? "button-secondary" : "button-primary"}" type="button" ${isCurrent ? "disabled" : `data-open-workspace="${escapeHtml(workspace.id)}"`}>${isCurrent ? "Sesi aktif" : "Buka sesi"}${isCurrent ? "" : " →"}</button>${deleteButton}</div></footer>
-        </article>`;
+        </details>`;
       }).join("");
       const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
       return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Atur ruang lingkup hitung, penanggung jawab, dan sesi kerja untuk setiap brand.</p></div><div class="head-buttons">${addButton}</div></section>
@@ -2117,6 +2235,7 @@
 
     function updateWorkspaceCountMode(select) {
       const workspace = state.workspaces.find((item) => item.id === select.dataset.workspaceCountMode);
+      const keepScheduleCardOpen = select.closest("details.schedule-card")?.open;
       const countMode = select.value === "all" ? "all" : "laptops";
       if (!workspace || !canEditWorkspaceSession(workspace) || workspace.data.activeSession.status === "completed") {
         select.value = workspace?.data.countMode === "all" ? "all" : "laptops";
@@ -2140,6 +2259,11 @@
       if (workspace.id === state.currentWorkspaceId) Object.assign(state, snapshotWorkspaceData(workspace.data));
       persist();
       render();
+      if (keepScheduleCardOpen) {
+        const updatedCard = [...document.querySelectorAll("details.schedule-card")].find((card) =>
+          card.querySelector("[data-workspace-count-mode]")?.dataset.workspaceCountMode === workspace.id);
+        if (updatedCard) updatedCard.open = true;
+      }
       notify(`Perhitungan sesi ${workspace.name || ""} diubah menjadi ${countModeLabel(countMode)}.`);
     }
 
@@ -2220,11 +2344,29 @@
     }
 
     function render() {
+      if (currentPage === "admin-users" && !isSuperAdmin()) currentPage = "opname";
+      if (authSession) {
+        const savedPage = currentPage === "completed-session-detail" ? "completed-sessions" : currentPage;
+        try {
+          localStorage.setItem(`${PAGE_STORAGE_KEY}${authSession.user.id}`, RESTORABLE_PAGES.has(savedPage) ? savedPage : "opname");
+        } catch (error) {
+          console.error("Halaman terakhir tidak dapat disimpan:", error);
+        }
+      }
       document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === currentPage));
       const main = document.getElementById("main-content");
-      if (currentPage === "admin-users" && !isSuperAdmin()) currentPage = "opname";
       main.innerHTML = currentPage === "dashboard" ? renderDashboard() : currentPage === "opname" ? renderOpname() : currentPage === "layouts" ? renderLayouts() : currentPage === "workspaces" ? renderWorkspaceSchedule() : currentPage === "products" ? renderProducts() : currentPage === "recap" ? renderRecap() : currentPage === "about" ? renderAbout() : currentPage === "admin-users" ? renderAdminUsers() : currentPage === "completed-session-detail" ? renderCompletedSessionView() : currentPage === "completed-sessions" ? renderCompletedSessions() : renderHistory();
       bindPageEvents();
+    }
+
+    function restoreLastPage(session) {
+      try {
+        const savedPage = localStorage.getItem(`${PAGE_STORAGE_KEY}${session.user.id}`);
+        return RESTORABLE_PAGES.has(savedPage) ? savedPage : "opname";
+      } catch (error) {
+        console.error("Halaman terakhir tidak dapat dibaca:", error);
+        return "opname";
+      }
     }
 
     function renderAbout() {
@@ -2316,6 +2458,12 @@
       document.getElementById("finish-button")?.addEventListener("click", openFinishDialog);
       document.getElementById("new-session-button")?.addEventListener("click", startNewSession);
       document.getElementById("workbook-input").addEventListener("change", importWorkbook);
+      document.querySelectorAll(".schedule-card-summary").forEach((summary) => summary.addEventListener("click", () => {
+        const selectedCard = summary.closest("details.schedule-card");
+        document.querySelectorAll("details.schedule-card[open]").forEach((card) => {
+          if (card !== selectedCard) card.open = false;
+        });
+      }));
       document.querySelectorAll("[data-open-workspace]").forEach((button) => button.addEventListener("click", () => switchWorkspace(button.dataset.openWorkspace)));
       document.querySelectorAll("[data-delete-workspace]").forEach((button) => button.addEventListener("click", () => requestDeleteWorkspace(button.dataset.deleteWorkspace)));
       document.querySelectorAll("[data-dashboard-workspace]").forEach((button) => button.addEventListener("click", () => {
@@ -2741,7 +2889,6 @@
         state.activeSession = newSession;
         state.workbookFiles = [...(state.workbookFiles || []), archivedWorkbook];
         persist();
-        currentPage = "opname";
         render();
         notify(`Master dimuat dan file diarsipkan: ${state.products.length} item per warehouse, ${Object.keys(serialMaster).length} serial.`);
       } catch (error) {
