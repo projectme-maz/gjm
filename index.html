@@ -1053,8 +1053,8 @@
     function canEditActiveSession() {
       return canEditWorkspaceSession(activeWorkspace());
     }
-    function canEditCompletedSession(session) {
-      return isSuperAdmin() || Boolean(authSession?.user?.id && session?.createdByUserId === authSession.user.id);
+    function canDeleteCompletedSession() {
+      return isSuperAdmin();
     }
     function sessionOwnerName(session) {
       return session?.createdByUsername || (session?.createdByUserId ? "Staf" : "Belum ditetapkan");
@@ -1858,7 +1858,7 @@
 
     function renderCompletedSessions() {
       const completed = [...state.sessions].sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
-      return `${navMarkup()}<section class="page-head archive-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Arsip stock opname</div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Item dihitung</th><th>Unit VEF dihitung</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canEdit = canEditCompletedSession(session); const countMode = session.countMode === "all" ? "all" : "laptops"; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU <div class="product-sku">${countModeLabel(countMode)}</div></td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canEdit ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
+      return `${navMarkup()}<section class="page-head archive-page-head"><div class="archive-page-heading"><div class="archive-page-eyebrow">Arsip stock opname</div><h1>Sesi Stock Opname</h1><p class="subtitle">Arsip sesi yang sudah selesai, termasuk file XLSX asli, nama akun, PIC, Scan Layout, Result SO, dan Rekap Selisih.</p></div><span class="category-chip">${completed.length} sesi selesai</span></section><section class="table-section"><div class="table-toolbar"><div class="table-title">Sesi sebelumnya <span class="table-count">${completed.length} sesi selesai · terbaru di atas</span></div></div><div class="table-scroll"><table><thead><tr><th>Nama sesi</th><th>Pemilik</th><th>Nama PIC</th><th>Tanggal sesi</th><th>Item dihitung</th><th>Unit VEF dihitung</th><th>SN cocok</th><th>Item sesuai</th><th>Selisih</th><th>SN bukan laptop</th><th>SN bermasalah</th><th>Data</th></tr></thead><tbody>${completed.length ? completed.map((session) => { const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || []; const canDelete = canDeleteCompletedSession(); const countMode = session.countMode === "all" ? "all" : "laptops"; return `<tr><td>${escapeHtml(session.workspaceName || "Sesi opname")}<div class="product-sku">${(session.workbooks || []).length} file XLSX</div></td><td>${escapeHtml(sessionOwnerName(session))}</td><td><div class="product-name">PIC 1: ${escapeHtml(pics[0] || "Belum diisi")}</div><div class="product-sku">PIC 2: ${escapeHtml(pics[1] || "Belum diisi")}</div></td><td><div class="product-name">${escapeHtml(formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric" }))}</div><div class="product-sku">${escapeHtml(new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(session.finishedAt)))}</div></td><td>${session.total} SKU <div class="product-sku">${countModeLabel(countMode)}</div></td><td>${formatNumber(session.expected)}</td><td>${formatNumber(session.scanned)}</td><td><span class="variance zero">${session.matching}</span></td><td>${session.shortages + session.surpluses}</td><td>${formatNumber(session.nonLaptopScans || 0)}</td><td><span class="row-status ${session.issues ? "shortage" : "match"}">${session.issues}</span></td><td><div class="head-buttons">${session.snapshot ? `<button class="button button-secondary" type="button" data-open-completed-session="${escapeHtml(session.id)}">Buka sesi</button>` : `<span class="product-sku">Data detail tidak tersedia</span>`}${canDelete ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus</button>` : ""}</div></td></tr>`; }).join("") : `<tr><td class="empty-row" colspan="12">Belum ada sesi opname yang selesai.</td></tr>`}</tbody></table></div></section>`;
     }
 
     function renderCompletedSessionView() {
@@ -1869,14 +1869,14 @@
       }
       const finishedAt = formatDate(session.finishedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
       const pics = session.picNames || state.workspaces.find((workspace) => workspace.id === session.workspaceId)?.picNames || [];
-      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(session.workspaceName || "Sesi opname")}</h1><p class="subtitle">Pemilik: ${escapeHtml(sessionOwnerName(session))} · PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")} · Selesai ${escapeHtml(finishedAt)}.</p></div><div class="head-buttons"><button class="button button-secondary" id="back-to-completed-sessions">← Kembali ke daftar sesi</button>${canEditCompletedSession(session) ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus sesi</button>` : ""}</div></section><section class="completed-session-view">${renderCompletedSessionDetails(session)}</section>`;
+      return `${navMarkup()}<section class="page-head"><div><h1>${escapeHtml(session.workspaceName || "Sesi opname")}</h1><p class="subtitle">Pemilik: ${escapeHtml(sessionOwnerName(session))} · PIC 1: ${escapeHtml(pics[0] || "Belum diisi")} · PIC 2: ${escapeHtml(pics[1] || "Belum diisi")} · Selesai ${escapeHtml(finishedAt)}.</p></div><div class="head-buttons"><button class="button button-secondary" id="back-to-completed-sessions">← Kembali ke daftar sesi</button>${canDeleteCompletedSession() ? `<button class="button button-danger" type="button" data-delete-completed-session="${escapeHtml(session.id)}">Hapus sesi</button>` : ""}</div></section><section class="completed-session-view">${renderCompletedSessionDetails(session)}</section>`;
     }
 
     function requestDeleteCompletedSession(sessionId) {
       const session = state.sessions.find((item) => item.id === sessionId);
       if (!session) return;
-      if (!canEditCompletedSession(session)) {
-        notify(`Arsip hanya dapat dihapus oleh ${sessionOwnerName(session)} atau Super Admin.`);
+      if (!canDeleteCompletedSession()) {
+        notify(`Arsip sesi hanya dapat dihapus oleh Super Admin.`);
         return;
       }
       pendingCompletedSessionDeletionId = sessionId;
@@ -1886,10 +1886,10 @@
 
     async function deleteCompletedSession() {
       const session = state.sessions.find((item) => item.id === pendingCompletedSessionDeletionId);
-      if (session && !canEditCompletedSession(session)) {
+      if (session && !canDeleteCompletedSession()) {
         document.getElementById("delete-completed-session-dialog").close();
         pendingCompletedSessionDeletionId = "";
-        notify(`Arsip hanya dapat dihapus oleh ${sessionOwnerName(session)} atau Super Admin.`);
+        notify(`Arsip sesi hanya dapat dihapus oleh Super Admin.`);
         return;
       }
       if (!session) {
