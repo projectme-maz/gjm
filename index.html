@@ -412,8 +412,11 @@
     }
     .brand-mark { background: linear-gradient(145deg, #287c69, #124a41); }
     .nav-item.active { background: linear-gradient(100deg, #d7ebe4, #f0f7f4); box-shadow: inset 3px 0 #8fbba8; color: #164b42; }
-    .auth-screen { background: radial-gradient(ellipse at 82% 10%, rgba(213, 232, 226, .62), transparent 36%), var(--canvas); }
+    .auth-screen { background: linear-gradient(90deg, rgba(8, 15, 16, .96) 0%, rgba(8, 15, 16, .92) 32%, rgba(8, 15, 16, .72) 52%, rgba(8, 15, 16, .18) 100%), url("./assets/login-background.jpeg") center / cover no-repeat, #111b1a; }
     .auth-card { border-radius: 18px; box-shadow: 0 22px 70px rgba(25, 55, 50, .13); }
+    @media (max-width: 650px) {
+      .auth-screen { background: linear-gradient(0deg, rgba(8, 15, 16, .7), rgba(8, 15, 16, .42)), url("./assets/login-background.jpeg") 62% center / cover no-repeat, #111b1a; }
+    }
     .auth-submit, .button-primary { background: linear-gradient(135deg, #21806a, var(--green)); }
     .auth-submit:hover, .button-primary:hover { background: var(--green-dark); }
     .button-primary { box-shadow: 0 3px 9px rgba(23, 107, 91, .16); }
@@ -500,7 +503,10 @@
     html[data-theme="dark"] .completed-detail-panel,
     html[data-theme="dark"] .completed-rack,
     html[data-theme="dark"] .about-guide-card { background: var(--paper); border-color: var(--line); color: var(--ink); }
-    html[data-theme="dark"] .auth-screen { background: radial-gradient(ellipse at 82% 10%, rgba(39,91,78,.22), transparent 36%), var(--canvas); }
+    html[data-theme="dark"] .auth-screen { background: linear-gradient(90deg, rgba(8, 15, 16, .96) 0%, rgba(8, 15, 16, .92) 32%, rgba(8, 15, 16, .72) 52%, rgba(8, 15, 16, .18) 100%), url("./assets/login-background.jpeg") center / cover no-repeat, #111b1a; }
+    @media (max-width: 650px) {
+      html[data-theme="dark"] .auth-screen { background: linear-gradient(0deg, rgba(8, 15, 16, .7), rgba(8, 15, 16, .42)), url("./assets/login-background.jpeg") 62% center / cover no-repeat, #111b1a; }
+    }
     html[data-theme="dark"] .auth-card { box-shadow: 0 22px 70px rgba(0,0,0,.36); }
     html[data-theme="dark"] .auth-field label,
     html[data-theme="dark"] .form-field label,

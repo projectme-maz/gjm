@@ -10,7 +10,7 @@ Static web application for stock-opname reconciliation. GitHub Actions publishes
 4. Push a commit to `main`, or run **Deploy to GitHub Pages** from the repository's **Actions** tab.
 5. Once the workflow succeeds, open the Pages URL shown in the deployment job (normally `https://<account>.github.io/<repository>/`).
 
-The workflow packages only `index.html` for publishing. The spreadsheet parser is loaded from jsDelivr, so users need an internet connection to use workbook import/export features.
+The workflow packages `index.html` and the login background image from `assets/` for publishing. The spreadsheet parser is loaded from jsDelivr, so users need an internet connection to use workbook import/export features.
 
 ## Supabase authentication and shared data
 

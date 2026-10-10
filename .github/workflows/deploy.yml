@@ -32,6 +32,7 @@ jobs:
         run: |
           mkdir dist
           cp index.html dist/index.html
+          cp -R assets dist/assets
           touch dist/.nojekyll
 
       - name: Upload Pages artifact
