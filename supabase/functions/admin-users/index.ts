@@ -8,6 +8,7 @@ const localOrigins = new Set([
   "http://localhost:8080",
 ]);
 const passwordAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+const resetTemporaryPassword = "12345678";
 
 function jsonResponse(status: number, body: Record<string, unknown>, origin: string) {
   return new Response(JSON.stringify(body), {
@@ -178,9 +179,8 @@ Deno.serve(async (request: Request) => {
   if (!targetUser) return jsonResponse(404, { error: "Akun autentikasi tidak ditemukan." }, origin);
 
   if (input.action === "reset-password") {
-    const temporaryPassword = makeTemporaryPassword();
     const { error } = await adminClient.auth.admin.updateUserById(targetUser.id, {
-      password: temporaryPassword,
+      password: resetTemporaryPassword,
       user_metadata: {
         ...targetUser.user_metadata,
         username,
@@ -193,8 +193,8 @@ Deno.serve(async (request: Request) => {
     }
     return jsonResponse(200, {
       username,
-      temporaryPassword,
-      message: "Password sementara dibuat; wajib diganti saat login berikutnya.",
+      temporaryPassword: resetTemporaryPassword,
+      message: "Password sementara direset ke 12345678; wajib diganti saat login berikutnya.",
     }, origin);
   }
 

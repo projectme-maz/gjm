@@ -540,6 +540,19 @@
     .dialog-actions { background: #fafbf8; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; padding: 13px 21px; }
     .confirm-body { color: #5f665c; font-size: 12px; line-height: 1.6; padding: 20px 21px; }
     .confirm-body strong { color: var(--ink); }
+    .reset-password-dialog { overflow: hidden; }
+    .reset-password-body { padding: 22px; }
+    .reset-password-success-icon { align-items: center; background: #e5f2ee; border: 1px solid #cfe5dc; border-radius: 50%; color: #176b5b; display: flex; font-size: 23px; height: 48px; justify-content: center; margin: 0 auto 14px; width: 48px; }
+    .reset-password-copy { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 16px; text-align: center; }
+    .reset-password-account { background: #f5f8f6; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 12px; font-weight: 700; margin-bottom: 10px; padding: 10px 12px; text-align: center; }
+    .reset-password-value { align-items: center; background: #f5f8f6; border: 1px solid var(--line); border-radius: 8px; display: flex; gap: 10px; justify-content: space-between; padding: 8px 9px 8px 13px; }
+    .reset-password-value code { color: var(--green-dark); font: 700 18px/1.3 "Space Grotesk", "Segoe UI", sans-serif; letter-spacing: 1px; }
+    .reset-password-warning { background: #fbf2df; border: 1px solid #f0dfb8; border-radius: 8px; color: #765521; font-size: 10px; line-height: 1.5; margin-top: 13px; padding: 10px 12px; }
+    html[data-theme="dark"] .reset-password-success-icon { background: #203b35; border-color: #36594d; color: #9edbc3; }
+    html[data-theme="dark"] .reset-password-account,
+    html[data-theme="dark"] .reset-password-value { background: #192a27; border-color: var(--line); color: var(--ink); }
+    html[data-theme="dark"] .reset-password-value code { color: #a9dec9; }
+    html[data-theme="dark"] .reset-password-warning { background: #3c3323; border-color: #655332; color: #f0d48e; }
     @media (max-width: 900px) {
       .app-shell { grid-template-columns: 190px minmax(0, 1fr); }
       .sidebar { padding-left: 12px; padding-right: 12px; }
@@ -916,6 +929,17 @@
     <div class="dialog-head"><div><div class="dialog-title">Hapus sesi workspace?</div><div class="dialog-subtitle">Data sesi dan arsip stock opname terkait akan dihapus permanen.</div></div><button class="dialog-close" type="button" data-close="delete-workspace-dialog" aria-label="Tutup">×</button></div>
     <div class="confirm-body" id="delete-workspace-message"></div>
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="delete-workspace-dialog">Batal</button><button class="button button-danger" id="confirm-delete-workspace" type="button">Hapus sesi</button></div>
+  </dialog>
+  <dialog id="reset-password-dialog" class="reset-password-dialog" aria-labelledby="reset-password-title">
+    <div class="dialog-head"><div><div class="dialog-title" id="reset-password-title">Password berhasil direset</div><div class="dialog-subtitle">Password sementara akun staf sudah diperbarui.</div></div><button class="dialog-close" type="button" data-close="reset-password-dialog" aria-label="Tutup">×</button></div>
+    <div class="reset-password-body">
+      <div class="reset-password-success-icon" aria-hidden="true">✓</div>
+      <p class="reset-password-copy">Sampaikan password sementara ini secara pribadi kepada pemilik akun.</p>
+      <div class="reset-password-account" id="reset-password-username"></div>
+      <div class="reset-password-value"><code id="reset-password-value"></code><button class="button button-secondary" id="copy-reset-password" type="button">Salin</button></div>
+      <div class="reset-password-warning">Demi keamanan, pengguna wajib mengganti password ini saat login berikutnya. Jangan bagikan password di grup atau tempat umum.</div>
+    </div>
+    <div class="dialog-actions"><button class="button button-primary" type="button" data-close="reset-password-dialog">Selesai</button></div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2461,6 +2485,12 @@
       }
     }
 
+    function showResetPasswordDialog(username, temporaryPassword) {
+      document.getElementById("reset-password-username").textContent = `Akun: ${username}`;
+      document.getElementById("reset-password-value").textContent = temporaryPassword;
+      document.getElementById("reset-password-dialog").showModal();
+    }
+
     async function administerUser(action, username, disabled) {
       if (!isSuperAdmin()) return;
       if (action === "toggle" && !window.confirm(`${disabled ? "Aktifkan" : "Nonaktifkan"} akun ${username}?`)) return;
@@ -2472,17 +2502,29 @@
         setAdminNotice(data?.error || await getFunctionErrorMessage(error) || "Aksi akun gagal.", "error");
         return;
       }
-      if (data.temporaryPassword) {
-        setAdminNotice(`Password sementara untuk ${username}: ${data.temporaryPassword} — bagikan secara pribadi; wajib diganti saat login.`);
-      } else {
-        setAdminNotice(data.message || "Aksi akun berhasil.");
+      if (action === "reset" && (!data?.temporaryPassword || data.username !== username)) {
+        setAdminNotice("Password mungkin sudah direset, tetapi detail password tidak diterima. Muat ulang dan coba verifikasi sebelum membagikan password.", "error");
+        return;
       }
+      if (action !== "reset") setAdminNotice(data.message || "Aksi akun berhasil.");
+      else adminNotice = "";
       await loadAdminUsers();
+      if (action === "reset" && data.temporaryPassword) showResetPasswordDialog(username, data.temporaryPassword);
     }
 
     function bindPageEvents() {
       document.getElementById("add-workspace-button")?.addEventListener("click", addWorkspace);
       document.getElementById("admin-refresh-users")?.addEventListener("click", loadAdminUsers);
+      document.getElementById("copy-reset-password")?.addEventListener("click", async () => {
+        const password = document.getElementById("reset-password-value").textContent;
+        try {
+          await navigator.clipboard.writeText(password);
+          notify("Password sementara disalin.");
+        } catch (error) {
+          console.error("Password sementara tidak dapat disalin:", error);
+          notify("Gagal menyalin password. Silakan salin secara manual.");
+        }
+      });
       document.getElementById("admin-create-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const form = event.currentTarget;
