@@ -384,6 +384,7 @@
     .schedule-overview-stat strong { display: block; font-size: 17px; line-height: 1.1; }
     .schedule-overview-stat span { color: #d5e9df; display: block; font-size: 9px; margin-top: 3px; }
     .schedule-grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+    .schedule-add-row { display: flex; justify-content: center; margin-top: 14px; }
     .schedule-card { background: linear-gradient(155deg, #fff, #fcfdfb); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 5px 18px rgba(35,59,38,.04); min-width: 0; overflow: hidden; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
     .schedule-card:hover { border-color: #c7dacf; box-shadow: 0 10px 25px rgba(35,59,38,.08); transform: translateY(-2px); }
     .schedule-card.current { border-color: #86b9a3; box-shadow: 0 0 0 2px rgba(42,117,91,.08), 0 8px 22px rgba(35,59,38,.06); }
@@ -2248,9 +2249,10 @@
         </details>`;
       }).join("");
       const addButton = isSuperAdmin() ? '<button class="button button-primary" id="add-workspace-button" type="button">＋ Tambah Sesi</button>' : "";
-      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Atur ruang lingkup hitung, penanggung jawab, dan sesi kerja untuk setiap brand.</p></div><div class="head-buttons">${addButton}</div></section>
+      return `${navMarkup()}<section class="page-head"><div><h1>Jadwal Stock Opname</h1><p class="subtitle">Atur ruang lingkup hitung, penanggung jawab, dan sesi kerja untuk setiap brand.</p></div></section>
         <section class="schedule-overview" aria-label="Ringkasan jadwal stock opname"><div class="schedule-overview-copy"><div class="schedule-overview-kicker">Perencanaan stock opname</div><div class="schedule-overview-title">Semua sesi, tertata dalam satu tempat</div><div class="schedule-overview-description">Pilih mode perhitungan dan PIC untuk setiap brand. Data setiap sesi tetap terpisah.</div></div><div class="schedule-overview-stats"><div class="schedule-overview-stat"><strong>${state.workspaces.length}</strong><span>Total sesi</span></div><div class="schedule-overview-stat"><strong>${activeCount}</strong><span>Berjalan</span></div><div class="schedule-overview-stat"><strong>${completedCount}</strong><span>Selesai</span></div></div></section>
-        <section class="schedule-grid" aria-label="Daftar sesi stock opname">${cards || '<div class="schedule-empty">Belum ada sesi stock opname.</div>'}</section>`;
+        <section class="schedule-grid" aria-label="Daftar sesi stock opname">${cards || '<div class="schedule-empty">Belum ada sesi stock opname.</div>'}</section>
+        ${addButton ? `<div class="schedule-add-row">${addButton}</div>` : ""}`;
     }
 
     function updateWorkspaceCountMode(select) {
