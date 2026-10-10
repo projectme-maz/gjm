@@ -892,7 +892,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="upload-input" id="workbook-input" type="file" accept=".xlsx,.xls" aria-label="Pilih workbook stock opname">
   <dialog id="finish-dialog">
-    <div class="dialog-head"><div><div class="dialog-title">Selesaikan stock opname?</div><div class="dialog-subtitle">Periksa hasil rekonsiliasi sebelum menutup sesi.</div></div><button class="dialog-close" type="button" data-close="finish-dialog" aria-label="Tutup">×</button></div>
+    <div class="dialog-head"><div><div class="dialog-title">Selesaikan stock opname?</div><div class="dialog-subtitle">Hasil disimpan ke arsip. Master VEF dan data kerja sesi ini akan dikosongkan; nama brand, PIC, dan mode hitung tetap.</div></div><button class="dialog-close" type="button" data-close="finish-dialog" aria-label="Tutup">×</button></div>
     <div class="confirm-body" id="finish-message"></div>
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="finish-dialog">Kembali</button><button class="button button-primary" id="confirm-finish" type="button">Selesaikan sesi</button></div>
   </dialog>
@@ -1038,6 +1038,13 @@
     }
     function activeWorkspaceName() {
       return activeWorkspace()?.name.trim() || "Nama Brand belum diisi";
+    }
+    function workspaceHasStarted(workspace) {
+      const data = workspace?.data;
+      return Boolean(data && (
+        data.products.length > 0
+        || (data.workbookFiles || []).some((workbook) => workbook.sessionId === data.activeSession.id)
+      ));
     }
     function workspaceHasUnownedActiveData(workspace) {
       const data = workspace?.data || {};
@@ -2181,15 +2188,16 @@
 
     function renderWorkspaceSchedule() {
       const completedCount = state.workspaces.filter((workspace) => workspace.data.activeSession.status === "completed").length;
-      const activeCount = state.workspaces.filter((workspace) => workspace.data.products.length > 0 && workspace.data.activeSession.status !== "completed").length;
+      const activeCount = state.workspaces.filter((workspace) => workspaceHasStarted(workspace) && workspace.data.activeSession.status !== "completed").length;
       const cards = state.workspaces.map((workspace, index) => {
         const data = workspace.data;
         const isCurrent = workspace.id === state.currentWorkspaceId;
         const canEdit = canEditWorkspaceSession(workspace);
         const stats = getWorkspaceDashboardStats(workspace);
         const isCompleted = data.activeSession.status === "completed";
-        const status = isCompleted ? "Selesai" : data.products.length ? "Berjalan" : "Belum dimulai";
-        const statusClass = isCompleted ? "match" : data.products.length ? "different" : "pending";
+        const hasStarted = workspaceHasStarted(workspace);
+        const status = isCompleted ? "Selesai" : hasStarted ? "Berjalan" : "Belum dimulai";
+        const statusClass = isCompleted ? "match" : hasStarted ? "different" : "pending";
         const serials = Object.keys(data.serialMaster || {}).length;
         const countMode = data.countMode === "all" ? "all" : "laptops";
         const summaryPicNames = (workspace.picNames || []).filter(Boolean).map(escapeHtml).join(" & ") || "PIC belum diisi";
@@ -2471,7 +2479,7 @@
           if (card !== selectedCard) card.open = false;
         });
       }));
-      document.querySelectorAll("[data-open-workspace]").forEach((button) => button.addEventListener("click", () => switchWorkspace(button.dataset.openWorkspace)));
+      document.querySelectorAll("[data-open-workspace]").forEach((button) => button.addEventListener("click", () => switchWorkspace(button.dataset.openWorkspace, "products")));
       document.querySelectorAll("[data-delete-workspace]").forEach((button) => button.addEventListener("click", () => requestDeleteWorkspace(button.dataset.deleteWorkspace)));
       document.querySelectorAll("[data-dashboard-workspace]").forEach((button) => button.addEventListener("click", () => {
         const workspaceId = button.dataset.dashboardWorkspace;
@@ -2579,13 +2587,13 @@
       });
     }
 
-    function switchWorkspace(id) {
+    function switchWorkspace(id, destinationPage = "opname") {
       const workspace = state.workspaces.find((item) => item.id === id);
       if (!workspace || workspace.id === state.currentWorkspaceId) return;
       persist();
       state.currentWorkspaceId = workspace.id;
       Object.assign(state, snapshotWorkspaceData(workspace.data));
-      currentPage = "opname";
+      currentPage = destinationPage;
       searchTerm = "";
       persist();
       render();
@@ -2917,6 +2925,7 @@
       const finishedAt = new Date().toISOString();
       const snapshot = JSON.parse(JSON.stringify({
         products: state.products,
+        serialMaster: state.serialMaster,
         scanEvents: state.scanEvents,
         manualEntries: state.manualEntries,
         countMode: state.countMode,
@@ -2924,14 +2933,22 @@
         layoutQuantities: state.layoutQuantities,
         layoutNumbers: state.layoutNumbers
       }));
-      const workbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === state.activeSession.id);
-      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName: activeWorkspace()?.name || "Sesi opname", picNames: [...(activeWorkspace()?.picNames || ["", ""])], createdByUserId: state.activeSession.createdByUserId || authSession?.user?.id || "", createdByUsername: state.activeSession.createdByUsername || authSession?.user?.user_metadata?.username || authSession?.user?.email || "", startedAt: state.activeSession.startedAt, finishedAt, snapshot, workbooks });
-      state.activeSession = { ...state.activeSession, status: "completed", finishedAt };
-      recordActivity("Sesi diselesaikan", `Stock opname ${activeWorkspace()?.name || "Sesi opname"} diselesaikan.`);
+      const workspace = activeWorkspace();
+      const workspaceName = workspace?.name || "Sesi opname";
+      const archivedSessionId = state.activeSession.id;
+      const workbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId === archivedSessionId);
+      const unarchivedWorkbooks = (state.workbookFiles || []).filter((workbook) => workbook.sessionId !== archivedSessionId);
+      state.sessions.push({ ...stats, id: state.activeSession.id, workspaceId: state.currentWorkspaceId, workspaceName, picNames: [...(workspace?.picNames || ["", ""])], createdByUserId: state.activeSession.createdByUserId || authSession?.user?.id || "", createdByUsername: state.activeSession.createdByUsername || authSession?.user?.user_metadata?.username || authSession?.user?.email || "", startedAt: state.activeSession.startedAt, finishedAt, snapshot, workbooks });
+      recordActivity("Sesi diselesaikan", `Stock opname ${workspaceName} diselesaikan dan diarsipkan.`);
+      const historyEvents = state.historyEvents;
+      const countMode = state.countMode;
+      Object.assign(state, emptyWorkspaceData(), { historyEvents, countMode, workbookFiles: unarchivedWorkbooks });
+      state.lastScan = null;
+      document.getElementById("workbook-input").value = "";
       persist();
       document.getElementById("finish-dialog").close();
       render();
-      notify("Hasil sesi disimpan ke riwayat.");
+      notify("Hasil sesi diarsipkan. Master VEF dan data kerja sesi ini telah dikosongkan.");
     }
 
     function startNewSession() {
