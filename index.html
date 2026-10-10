@@ -45,6 +45,7 @@
     .nav-list + .nav-label { margin-top: 24px; }
     .nav-list { display: grid; gap: 6px; }
     .nav-item { align-items: center; background: transparent; border: 0; border-radius: 9px; color: #e0ebe0; display: flex; gap: 12px; min-height: 44px; padding: 0 12px; text-align: left; transition: background .16s ease, color .16s ease, transform .16s ease; width: 100%; }
+    .nav-item[hidden], .nav-list[hidden] { display: none !important; }
     .nav-item:hover { background: rgba(255,255,255,.1); color: #fff; transform: translateX(2px); }
     .nav-item.active { background: linear-gradient(100deg, #d9efcf, #eff8e9); box-shadow: inset 3px 0 var(--lime); color: #194a32; font-weight: 700; }
     .nav-icon { align-items: center; color: inherit; display: inline-flex; font-size: 16px; justify-content: center; width: 18px; }
@@ -642,7 +643,7 @@
       <nav class="nav-list" aria-label="Bantuan" style="margin-top: 18px">
         <button class="nav-item" data-page="about"><span class="nav-icon">ⓘ</span><span>About</span></button>
       </nav>
-      <nav class="nav-list" aria-label="Administrasi" style="margin-top: 18px">
+      <nav class="nav-list" id="admin-navigation" aria-label="Administrasi" style="margin-top: 18px" hidden>
         <button class="nav-item" data-page="admin-users" id="admin-users-nav" hidden><span class="nav-icon">♙</span><span>Kelola Akun</span></button>
       </nav>
       <div class="sidebar-bottom">
@@ -1010,6 +1011,7 @@
       document.getElementById("profile-email").textContent = "";
       document.getElementById("profile-role").textContent = "";
       document.getElementById("admin-users-nav").hidden = true;
+      document.getElementById("admin-navigation").hidden = true;
       document.querySelectorAll(".top-account").forEach((element) => element.remove());
     }
     function unlockApp(session) {
@@ -1022,6 +1024,7 @@
       document.getElementById("profile-name").textContent = username;
       document.getElementById("profile-role").textContent = isSuperAdmin() ? "Super Admin · Pemilik" : "Staf";
       document.getElementById("admin-users-nav").hidden = !isSuperAdmin();
+      document.getElementById("admin-navigation").hidden = !isSuperAdmin();
       beginIdleTracking(session);
     }
     function getLastActivity() {
